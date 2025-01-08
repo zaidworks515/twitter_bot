@@ -1,0 +1,4 @@
+tweepy
+flask[async]
+flask-cors
+python-dotenv
