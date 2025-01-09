@@ -36,9 +36,10 @@ def reply_tweet_endpoint():
     data = request.json
     username = data.get('username')
     reply_text = data.get('reply_text')
+    # print(username, reply_text)
     
     try:
-        if not data or 'reply_text' or 'username' not in data:
+        if not username or not reply_text:
             return jsonify({'status': False, 'message': 'Missing "data or reply text or username" in the request payload'}), 400
 
         
