@@ -4,6 +4,7 @@ from config import api_key, api_secret, access_token, access_token_secret, beare
 import requests
 
 
+
 def post_tweet(text):    
     client = tweepy.Client(
         consumer_key=api_key,
@@ -33,6 +34,7 @@ def bearer_oauth(r):
     return r
 
 
+
 def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, access_token, access_token_secret):
     print(tweet_id, comment_text)
     comment_url = "https://api.twitter.com/2/tweets"
@@ -59,7 +61,7 @@ def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, acce
 
 
 
-def reply_tweet(username, reply_text):
+def reply_tweet(username=None, reply_text=None):
     # print(username, reply_text)
     user_url = f"https://api.twitter.com/2/users/by/username/{username}"
     
@@ -99,4 +101,64 @@ def reply_tweet(username, reply_text):
     
     
 
+
+
+def bearer_oauth2(r):
+    """
+    Method required by bearer token authentication.
+    """
+    r.headers["Authorization"] = f"Bearer {bearer_token}"
+    r.headers["User-Agent"] = "v2UserMentionsPython"
+    return r
     
+    
+
+def fetch_tagged_tweets(username, limit: int = 5):
+
+    url = f"https://api.twitter.com/2/users/by/username/{username}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "User-Agent": "v2UserMentionsPython"
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(
+            f"Request returned an error: {response.status_code} {response.text}"
+        )
+        
+    user_data = response.json()
+    
+    user_id = user_data["data"]["id"]
+    
+    mention_url = f"https://api.twitter.com/2/users/{user_id}/mentions?max_results={limit}"
+    params = {"tweet.fields": "created_at"}
+    # params = {"tweet.fields": "created_at,author_id"}
+
+    response = requests.request("GET", mention_url, auth=bearer_oauth2, params=params)
+    print(response.status_code)
+    
+    if response.status_code != 200:
+        raise Exception(
+            f"Request returned an error: {response.status_code} {response.text}"
+        )
+    
+    
+    return response.json()
+
+
+def reply_tagged_tweet(username, reply_text):
+
+    json_response = fetch_tagged_tweets(username)
+    
+    tweet_id = json_response["data"][0]['id']
+    tweet_text = json_response["data"][0]['text'] 
+    
+    comment_text = f"{reply_text}"
+    
+    if tweet_id:
+        comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
+    
+    if comment_data:
+        return comment_data
+    else:
+        return None
