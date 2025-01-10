@@ -2,6 +2,7 @@ import tweepy
 from requests_oauthlib import OAuth1
 from config import api_key, api_secret, access_token, access_token_secret, bearer_token
 import requests
+from db_queries import check_status, insert_results
 
 
 
@@ -101,8 +102,6 @@ def reply_tweet(username=None, reply_text=None):
     
     
 
-
-
 def bearer_oauth2(r):
     """
     Method required by bearer token authentication.
@@ -131,8 +130,8 @@ def fetch_tagged_tweets(username, limit: int = 5):
     user_id = user_data["data"]["id"]
     
     mention_url = f"https://api.twitter.com/2/users/{user_id}/mentions?max_results={limit}"
-    params = {"tweet.fields": "created_at"}
-    # params = {"tweet.fields": "created_at,author_id"}
+    # params = {"tweet.fields": "created_at"}
+    params = {"tweet.fields": "created_at,author_id"}
 
     response = requests.request("GET", mention_url, auth=bearer_oauth2, params=params)
     print(response.status_code)
@@ -150,15 +149,29 @@ def reply_tagged_tweet(username, reply_text):
 
     json_response = fetch_tagged_tweets(username)
     
-    tweet_id = json_response["data"][0]['id']
-    tweet_text = json_response["data"][0]['text'] 
+    for row in json_response['data']:
+        author_id = row['author_id']
+        tweet_id = row['id']
+        tweet_text = row['text']
+        
+        if tweet_id and author_id and tweet_text:
+            status = check_status(tweet_id)
+            if status != 'successful' or not status:                
+                comment_text = f"{reply_text}"
+            
+                comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
+        
+                if comment_data:
+                    print('Comment Successful..........')
+                    id = insert_results(tagged_tweet_id=tweet_id, 
+                                        author_id=author_id, 
+                                        tagged_tweet=tweet_text, 
+                                        replied_comments=comment_text, 
+                                        post_status='successful')
+                    
+    return comment_data
+
+
+        
     
-    comment_text = f"{reply_text}"
     
-    if tweet_id:
-        comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
-    
-    if comment_data:
-        return comment_data
-    else:
-        return None

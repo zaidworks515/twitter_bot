@@ -64,8 +64,6 @@ def reply_tag_tweet_endpoint():
     username = data.get('username') # jiskay tags check krne ho'n 
     reply_text = data.get('reply_text')
     
-    print(username, reply_text)
-    
     try:
         if not username or not reply_text:
             return jsonify({'status': False, 'message': 'Missing "data or reply text or username" in the request payload'}), 400
@@ -75,6 +73,7 @@ def reply_tag_tweet_endpoint():
             return jsonify({'status': False, 'message': 'Tweet "text" cannot be empty'}), 400
 
         response_reply_tweet = reply_tagged_tweet(username=username, reply_text=reply_text)  # will return a dictionary
+        
         
         if response_reply_tweet:
             return jsonify({'status': True, 'data': response_reply_tweet}), 200

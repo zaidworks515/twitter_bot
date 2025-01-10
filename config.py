@@ -10,3 +10,11 @@ bearer_token = os.getenv('BEARER_TOKEN')
 client_id = os.getenv('CLIENT_ID')
 client_secret_id = os.getenv('CLIENT_SECRET')
 port = os.getenv('PORT')
+
+
+"""========== db credentials =========="""
+host = os.getenv('HOST')
+user = os.getenv('USER')
+database = os.getenv('DATABASE')
+password = os.getenv('PASSWORD')
+
