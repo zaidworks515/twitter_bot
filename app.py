@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-import tweepy
 from flask_cors import CORS
 from twitter_functions import post_tweet, reply_tweet, reply_tagged_tweet
 import logging
@@ -30,8 +29,7 @@ def post_tweet_endpoint():
     except Exception as e:
         return jsonify({'status': False, 'message': str(e)}), 500
          
-  
-         
+   
 @app.route("/reply_tweet", methods=['POST'])
 def reply_tweet_endpoint():
     data = request.json
@@ -62,17 +60,15 @@ def reply_tweet_endpoint():
 def reply_tag_tweet_endpoint():
     data = request.json
     username = data.get('username') # jiskay tags check krne ho'n 
-    reply_text = data.get('reply_text')
+    
     
     try:
-        if not username or not reply_text:
-            return jsonify({'status': False, 'message': 'Missing "data or reply text or username" in the request payload'}), 400
+        if not username:
+            return jsonify({'status': False, 'message': 'Missing "username" in the request payload'}), 400
 
         
-        if not reply_text.strip():
-            return jsonify({'status': False, 'message': 'Tweet "text" cannot be empty'}), 400
 
-        response_reply_tweet = reply_tagged_tweet(username=username, reply_text=reply_text)  # will return a dictionary
+        response_reply_tweet = reply_tagged_tweet(username=username)  # will return a dictionary
         
         
         if response_reply_tweet:
@@ -84,8 +80,7 @@ def reply_tag_tweet_endpoint():
         return jsonify({'status': False, 'message': str(e)}), 500
   
   
-  
-         
+    
 
 if __name__ == "__main__":
     try:

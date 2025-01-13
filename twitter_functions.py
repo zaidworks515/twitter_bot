@@ -1,6 +1,6 @@
 import tweepy
 from requests_oauthlib import OAuth1
-from config import api_key, api_secret, access_token, access_token_secret, bearer_token
+from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key
 import requests
 from db_queries import check_status, insert_results
 
@@ -111,7 +111,6 @@ def bearer_oauth2(r):
     return r
     
     
-
 def fetch_tagged_tweets(username, limit: int = 5):
 
     url = f"https://api.twitter.com/2/users/by/username/{username}"
@@ -145,9 +144,10 @@ def fetch_tagged_tweets(username, limit: int = 5):
     return response.json()
 
 
-def reply_tagged_tweet(username, reply_text):
+def reply_tagged_tweet(username):
 
     json_response = fetch_tagged_tweets(username)
+    comment_data = None
     
     for row in json_response['data']:
         author_id = row['author_id']
@@ -156,22 +156,74 @@ def reply_tagged_tweet(username, reply_text):
         
         if tweet_id and author_id and tweet_text:
             status = check_status(tweet_id)
-            if status != 'successful' or not status:                
-                comment_text = f"{reply_text}"
+            if status != 'successful' or not status:
+                
+                reply_text = get_gork_response(tweet_text)   
+                if reply_text:            
+                    comment_text = f"{reply_text}"
+                
+                    comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
             
-                comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
-        
-                if comment_data:
-                    print('Comment Successful..........')
-                    id = insert_results(tagged_tweet_id=tweet_id, 
-                                        author_id=author_id, 
-                                        tagged_tweet=tweet_text, 
-                                        replied_comments=comment_text, 
-                                        post_status='successful')
+                    if comment_data:
+                        print('Comment Successful..........')
+                        id = insert_results(tagged_tweet_id=tweet_id, 
+                                            author_id=author_id, 
+                                            tagged_tweet=tweet_text, 
+                                            replied_comments=comment_text, 
+                                            post_status='successful')
                     
-    return comment_data
-
-
-        
+        return comment_data
     
-    
+
+def get_gork_response(tweet):
+    url = "https://api.x.ai/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {gork_api_key}"
+    }
+
+    data = {
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "You are a highly responsible, empathetic, and charismatic chatbot. "
+                    "When responding to tweets, always analyze the content for context. "
+                    "If the tweet references a serious or tragic event, such as a wildfire, disaster, destruction, loss, or sadness, respond with empathy, support, and seriousness."
+                    "Avoid humor or light-hearted tones in such cases. "
+                    "If the tweet is light-hearted, neutral, teasing, or joking, respond with sharp wit, playful jabs, and humor that make the interaction entertaining."
+                    "You excel at best clever comebacks and humorous roasts that are sharp, classy, and leave everyone speechless—but always maintain respect and never be rude."
+                    "Your goal is to turn teasing or joking tweets into opportunities for clever, hilarious replies that showcase intelligence and creativity."
+                    "If someone exaggerates or lies about you, expose the humor in it with witty sarcasm and playful flair, making it clear they can’t outsmart you."
+                    "Your responses should be the perfect blend of 'keh ke lena'—sharp, classy, and laugh-inducing—ensuring everyone enjoys the humor without feeling targeted."
+                    "Add emojis to enhance expression for extra flair, but only when relevant."
+                    "You are the life of the conversation, whether serious, witty, or jolly."
+                    "If you have @username in the tweet, avoid repeating it in the reply."
+                    "Your name is Zaid and your account is @zaid_works515, give a comeback when someone try to mess with you."
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"The following is a tweet where I was tagged: '{tweet}'."
+                    "Analyze the tweet for context, especially for any serious or tragic references."
+                    "If it is serious, reply with empathy and thoughtfulness, avoiding humor."
+                    "If it is light-hearted, teasing, or joking, reply with sharp wit, humor, and playful comebacks that make the interaction entertaining."
+                    "Do not explain your analysis; just provide the reply."
+                )
+            }
+        ],
+        "model": "grok-2",
+        "stream": False,
+        "temperature": 0.2  
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+
+        reply = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        return reply.strip()
+    except requests.exceptions.RequestException as e:
+        return f"An error occurred: {e}"
+
