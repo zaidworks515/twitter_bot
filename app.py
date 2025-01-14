@@ -79,8 +79,7 @@ def reply_tag_tweet_endpoint():
     except Exception as e:
         return jsonify({'status': False, 'message': str(e)}), 500
   
-  
-    
+      
 
 if __name__ == "__main__":
     try:
@@ -93,8 +92,6 @@ if __name__ == "__main__":
     
     
     
-        
-
 
 
 

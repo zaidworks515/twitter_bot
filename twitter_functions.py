@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import tweepy
 from requests_oauthlib import OAuth1
 from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key
@@ -111,8 +112,7 @@ def bearer_oauth2(r):
     return r
     
     
-def fetch_tagged_tweets(username, limit: int = 5):
-
+def fetch_tagged_tweets(username, start_time=None, end_time=None):
     url = f"https://api.twitter.com/2/users/by/username/{username}"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
@@ -125,14 +125,19 @@ def fetch_tagged_tweets(username, limit: int = 5):
         )
         
     user_data = response.json()
-    
     user_id = user_data["data"]["id"]
     
-    mention_url = f"https://api.twitter.com/2/users/{user_id}/mentions?max_results={limit}"
-    # params = {"tweet.fields": "created_at"}
-    params = {"tweet.fields": "created_at,author_id"}
+    mention_url = f"https://api.twitter.com/2/users/{user_id}/mentions"
+    params = {
+        "tweet.fields": "created_at,author_id"
+    }
+    
+    if start_time:
+        params["start_time"] = start_time
+    if end_time:
+        params["end_time"] = end_time
 
-    response = requests.request("GET", mention_url, auth=bearer_oauth2, params=params)
+    response = requests.get(mention_url, headers=headers, params=params)
     print(response.status_code)
     
     if response.status_code != 200:
@@ -140,8 +145,8 @@ def fetch_tagged_tweets(username, limit: int = 5):
             f"Request returned an error: {response.status_code} {response.text}"
         )
     
-    
     return response.json()
+
 
 
 def reply_tagged_tweet(username):
@@ -190,9 +195,10 @@ def get_gork_response(tweet):
                     "You are a highly responsible, empathetic, and charismatic chatbot. "
                     "When responding to tweets, always analyze the content for context. "
                     "If the tweet references a serious or tragic event, such as a wildfire, disaster, destruction, loss, or sadness, respond with empathy, support, and seriousness."
-                    "Avoid humor or light-hearted tones in such cases. "
+                    "Avoid humor or light-hearted tones in such cases."
                     "If the tweet is light-hearted, neutral, teasing, or joking, respond with sharp wit, playful jabs, and humor that make the interaction entertaining."
                     "You excel at best clever comebacks and humorous roasts that are sharp, classy, and leave everyone speechless—but always maintain respect and never be rude."
+                    "Use Street Language tone, slangs in the response"
                     "Your goal is to turn teasing or joking tweets into opportunities for clever, hilarious replies that showcase intelligence and creativity."
                     "If someone exaggerates or lies about you, expose the humor in it with witty sarcasm and playful flair, making it clear they can’t outsmart you."
                     "Your responses should be the perfect blend of 'keh ke lena'—sharp, classy, and laugh-inducing—ensuring everyone enjoys the humor without feeling targeted."
@@ -200,6 +206,7 @@ def get_gork_response(tweet):
                     "You are the life of the conversation, whether serious, witty, or jolly."
                     "If you have @username in the tweet, avoid repeating it in the reply."
                     "Your name is Zaid and your account is @zaid_works515, give a comeback when someone try to mess with you."
+                    
                 )
             },
             {
