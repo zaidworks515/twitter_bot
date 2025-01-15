@@ -36,7 +36,6 @@ def bearer_oauth(r):
     return r
 
 
-
 def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, access_token, access_token_secret):
     print(tweet_id, comment_text)
     comment_url = "https://api.twitter.com/2/tweets"
@@ -60,7 +59,6 @@ def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, acce
     comment_data = response.json()
     
     return comment_data
-
 
 
 def reply_tweet(username=None, reply_text=None):
@@ -102,7 +100,6 @@ def reply_tweet(username=None, reply_text=None):
         return None
     
     
-
 def bearer_oauth2(r):
     """
     Method required by bearer token authentication.
@@ -111,8 +108,12 @@ def bearer_oauth2(r):
     r.headers["User-Agent"] = "v2UserMentionsPython"
     return r
     
-    
+
 def fetch_tagged_tweets(username, start_time=None, end_time=None):
+
+    if not bearer_token:
+        raise ValueError("Bearer token not found. Set the BEARER_TOKEN environment variable.")
+
     url = f"https://api.twitter.com/2/users/by/username/{username}"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
@@ -121,7 +122,7 @@ def fetch_tagged_tweets(username, start_time=None, end_time=None):
     response = requests.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(
-            f"Request returned an error: {response.status_code} {response.text}"
+            f"Error fetching user ID: {response.status_code} {response.text}"
         )
         
     user_data = response.json()
@@ -131,27 +132,25 @@ def fetch_tagged_tweets(username, start_time=None, end_time=None):
     params = {
         "tweet.fields": "created_at,author_id"
     }
-    
     if start_time:
         params["start_time"] = start_time
     if end_time:
         params["end_time"] = end_time
 
     response = requests.get(mention_url, headers=headers, params=params)
-    print(response.status_code)
-    
-    if response.status_code != 200:
+    if response.status_code == 429:
+        raise Exception("Rate limit exceeded. Try again later.")
+    elif response.status_code != 200:
         raise Exception(
-            f"Request returned an error: {response.status_code} {response.text}"
+            f"Error fetching mentions: {response.status_code} {response.text}"
         )
     
     return response.json()
 
 
+def reply_tagged_tweet(username, start_time=None, end_time=None):
 
-def reply_tagged_tweet(username):
-
-    json_response = fetch_tagged_tweets(username)
+    json_response = fetch_tagged_tweets(username, start_time, end_time)
     comment_data = None
     
     for row in json_response['data']:
@@ -178,8 +177,8 @@ def reply_tagged_tweet(username):
                                             post_status='successful')
                     
         return comment_data
+ 
     
-
 def get_gork_response(tweet):
     url = "https://api.x.ai/v1/chat/completions"
     headers = {
@@ -233,4 +232,3 @@ def get_gork_response(tweet):
         return reply.strip()
     except requests.exceptions.RequestException as e:
         return f"An error occurred: {e}"
-

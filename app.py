@@ -2,10 +2,19 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from twitter_functions import post_tweet, reply_tweet, reply_tagged_tweet
 import logging
-from config import port
+from config import port, username
+from datetime import datetime, timedelta
+import schedule
+import time
+import threading
+
+
+
 
 app = Flask(__name__)
 CORS(app)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 @app.route("/post_tweet", methods=['POST'])
@@ -54,47 +63,44 @@ def reply_tweet_endpoint():
 
     except Exception as e:
         return jsonify({'status': False, 'message': str(e)}), 500
-  
-  
-@app.route("/reply_tagged_tweet", methods=['POST'])
-def reply_tag_tweet_endpoint():
-    data = request.json
-    username = data.get('username') # jiskay tags check krne ho'n 
-    
+ 
+
+def scheduler():
+    now = datetime.now()
+    end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    interval = now - timedelta(hours=4)  
+    start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    logging.info(f"Start Time: {start_time}, End Time: {end_time}")
     
     try:
-        if not username:
-            return jsonify({'status': False, 'message': 'Missing "username" in the request payload'}), 400
-
-        
-
-        response_reply_tweet = reply_tagged_tweet(username=username)  # will return a dictionary
-        
-        
-        if response_reply_tweet:
-            return jsonify({'status': True, 'data': response_reply_tweet}), 200
+        json_response = reply_tagged_tweet(username, start_time, end_time)
+        if json_response:
+            logging.info(f"Response Posted: {json_response}")
+            logging.info("=" * 40)
         else:
-            return jsonify({'status': False, 'message': 'Failed to post the reply of the given tweet'}), 500
-
+            print('No data found to be commented.')
     except Exception as e:
-        return jsonify({'status': False, 'message': str(e)}), 500
-  
+        logging.error(f"Error in scheduler: {e}", exc_info=True)
+
+ 
+schedule.every(1).minutes.do(scheduler)
+
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
       
 
 if __name__ == "__main__":
     try:
+        scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+        scheduler_thread.start()
+
         port = int(port)
         app.run(host='0.0.0.0', port=port, debug=True)
-    
+
     except Exception as e:
         logging.error(f"An error occurred when starting the app: {str(e)}")
         print(f"An error occurred: {str(e)}")
-    
-    
-    
-
-
-
-
-
-

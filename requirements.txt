@@ -3,3 +3,4 @@ flask[async]
 flask-cors
 python-dotenv
 mysql-connector-python
+schedule
