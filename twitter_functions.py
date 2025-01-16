@@ -149,35 +149,37 @@ def fetch_tagged_tweets(username, start_time=None, end_time=None):
 
 
 def reply_tagged_tweet(username, start_time=None, end_time=None):
+    try:
 
-    json_response = fetch_tagged_tweets(username, start_time, end_time)
-    comment_data = None
-    
-    for row in json_response['data']:
-        author_id = row['author_id']
-        tweet_id = row['id']
-        tweet_text = row['text']
+        json_response = fetch_tagged_tweets(username, start_time, end_time)
+        comment_data = None
         
-        if tweet_id and author_id and tweet_text:
-            status = check_status(tweet_id)
-            if status != 'successful' or not status:
-                
-                reply_text = get_gork_response(tweet_text)   
-                if reply_text:            
-                    comment_text = f"{reply_text}"
-                
-                    comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
+        for row in json_response['data']:
+            author_id = row['author_id']
+            tweet_id = row['id']
+            tweet_text = row['text']
             
-                    if comment_data:
-                        print('Comment Successful..........')
-                        id = insert_results(tagged_tweet_id=tweet_id, 
-                                            author_id=author_id, 
-                                            tagged_tweet=tweet_text, 
-                                            replied_comments=comment_text, 
-                                            post_status='successful')
+            if tweet_id and author_id and tweet_text:
+                status = check_status(tweet_id)
+                if status != 'successful' or not status:
                     
-        return comment_data
- 
+                    reply_text = get_gork_response(tweet_text)   
+                    if reply_text:            
+                        comment_text = f"{reply_text}"
+                    
+                        comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
+                
+                        if comment_data:
+                            print('Comment Successful..........')
+                            id = insert_results(tagged_tweet_id=tweet_id, 
+                                                author_id=author_id, 
+                                                tagged_tweet=tweet_text, 
+                                                replied_comments=comment_text, 
+                                                post_status='successful')
+                        
+            return comment_data
+    except Exception as e:
+        return e
     
 def get_gork_response(tweet):
     url = "https://api.x.ai/v1/chat/completions"

@@ -64,28 +64,30 @@ def reply_tweet_endpoint():
     except Exception as e:
         return jsonify({'status': False, 'message': str(e)}), 500
  
+scheduler_lock = threading.Lock()
 
 def scheduler():
-    now = datetime.now()
-    end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+    with scheduler_lock:
+        now = datetime.now()
+        end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    interval = now - timedelta(hours=4)  
-    start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
+        interval = now - timedelta(hours=4)
+        start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    logging.info(f"Start Time: {start_time}, End Time: {end_time}")
-    
-    try:
-        json_response = reply_tagged_tweet(username, start_time, end_time)
-        if json_response:
-            logging.info(f"Response Posted: {json_response}")
-            logging.info("=" * 40)
-        else:
-            print('No data found to be commented.')
-    except Exception as e:
-        logging.error(f"Error in scheduler: {e}", exc_info=True)
+        logging.info(f"Start Time: {start_time}, End Time: {end_time}")
+        
+        try:
+            json_response = reply_tagged_tweet(username, start_time, end_time)
+            if json_response:
+                logging.info(f"Response Posted: {json_response}")
+                logging.info("=" * 40)
+            else:
+                print('No data found to be commented.')
+        except Exception as e:
+            logging.error(f"Error in scheduler: {e}", exc_info=True)
 
  
-schedule.every(15).minutes.do(scheduler)
+schedule.every(16).minutes.do(scheduler)
 
 def run_scheduler():
     while True:
@@ -99,7 +101,7 @@ if __name__ == "__main__":
         scheduler_thread.start()
 
         port = int(port)
-        app.run(host='0.0.0.0', port=port, debug=True)
+        app.run(host='0.0.0.0', port=port, debug=False)
 
     except Exception as e:
         logging.error(f"An error occurred when starting the app: {str(e)}")
