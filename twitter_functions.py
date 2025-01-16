@@ -152,6 +152,8 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
     try:
 
         json_response = fetch_tagged_tweets(username, start_time, end_time)
+        # print("======= FETCHED RESPONSE =======")
+        # print(json_response)
         comment_data = None
         
         for row in json_response['data']:
@@ -177,7 +179,7 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
                                                 replied_comments=comment_text, 
                                                 post_status='successful')
                         
-            return comment_data
+        return comment_data
     except Exception as e:
         return e
     
