@@ -38,6 +38,7 @@ def insert_results(tagged_tweet_id=None, author_id=' ', tagged_tweet=None, repli
     else:
         return "Unable to connect to the database"
 
+
     
 def check_status(tagged_tweet_id):
     connection = create_connection()
