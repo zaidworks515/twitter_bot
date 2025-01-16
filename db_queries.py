@@ -18,7 +18,7 @@ def create_connection():
         print(f"Error: {e}")
         return None
     
-        
+    
 def insert_results(tagged_tweet_id=None, author_id=' ', tagged_tweet=None, replied_comments=None, post_status=None):   
     connection = create_connection()
     if connection:
