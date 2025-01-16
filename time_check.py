@@ -7,4 +7,4 @@ def time():
     print(f"CURRENT TIME OF THE SERVER. {now}")
     
     
-print(time)
+time()
