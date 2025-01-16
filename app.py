@@ -68,13 +68,13 @@ scheduler_lock = threading.Lock()
 
 def scheduler():
     with scheduler_lock:
-        netherlands_tz = pytz.timezone("Europe/Amsterdam")
+        # netherlands_tz = pytz.timezone("Europe/Amsterdam")
 
-        now = datetime.now(netherlands_tz)  
+        now = datetime.now()  
 
         end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        interval = now - timedelta(hours=4)
+        interval = now - timedelta(hours=5)
         start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         logging.info(f"Start Time: {start_time}, End Time: {end_time}")
@@ -90,7 +90,7 @@ def scheduler():
             logging.error(f"Error in scheduler: {e}", exc_info=True)
 
  
-schedule.every(9).minutes.do(scheduler)
+schedule.every(16).minutes.do(scheduler)
 
 def run_scheduler():
     while True:
