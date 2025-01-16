@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import schedule
 import time
 import threading
-
+import pytz
 
 
 
@@ -68,7 +68,10 @@ scheduler_lock = threading.Lock()
 
 def scheduler():
     with scheduler_lock:
-        now = datetime.now()
+        netherlands_tz = pytz.timezone("Europe/Amsterdam")
+
+        now = datetime.now(netherlands_tz)  
+
         end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         interval = now - timedelta(hours=4)
