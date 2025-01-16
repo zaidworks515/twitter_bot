@@ -74,7 +74,7 @@ def scheduler():
 
         end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        interval = now - timedelta(hours=5)
+        interval = now - timedelta(hours=12)
         start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         logging.info(f"Start Time: {start_time}, End Time: {end_time}")
@@ -90,7 +90,7 @@ def scheduler():
             logging.error(f"Error in scheduler: {e}", exc_info=True)
 
  
-schedule.every(5).minutes.do(scheduler)
+schedule.every(250).minutes.do(scheduler)
 
 def run_scheduler():
     while True:
