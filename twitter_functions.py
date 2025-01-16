@@ -152,8 +152,8 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
     try:
 
         json_response = fetch_tagged_tweets(username, start_time, end_time)
-        # print("======= FETCHED RESPONSE =======")
-        # print(json_response)
+        print("======= FETCHED RESPONSE =======")
+        print(json_response)
         comment_data = None
         
         for row in json_response['data']:
@@ -163,11 +163,14 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
             
             if tweet_id and author_id and tweet_text:
                 status = check_status(tweet_id)
+                print("STATUS CHECKED....")
                 if status != 'successful' or not status:
                     
-                    reply_text = get_gork_response(tweet_text)   
+                    reply_text = get_gork_response(tweet_text)
+                       
                     if reply_text:            
                         comment_text = f"{reply_text}"
+                        print("REPLY CREATED BY GORK")
                     
                         comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
                 
