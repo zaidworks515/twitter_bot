@@ -90,7 +90,7 @@ def scheduler():
             logging.error(f"Error in scheduler: {e}", exc_info=True)
 
  
-schedule.every(16).minutes.do(scheduler)
+schedule.every(5).minutes.do(scheduler)
 
 def run_scheduler():
     while True:

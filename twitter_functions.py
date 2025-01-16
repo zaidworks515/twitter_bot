@@ -175,7 +175,7 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
                         comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
                 
                         if comment_data:
-                            comment_data = comment_data.encode("utf-8")
+                            # comment_data = comment_data.encode("utf-8")
                             print('Comment Successful..........')
                             id = insert_results(tagged_tweet_id=tweet_id, 
                                                 author_id=author_id, 
