@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import schedule
 import time
 import threading
-import pytz
 
 
 
@@ -74,7 +73,7 @@ def scheduler():
 
         end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        interval = now - timedelta(hours=12)
+        interval = now - timedelta(hours=7)  # 1 hour spare from scheduler for safety purposes
         start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         logging.info(f"Start Time: {start_time}, End Time: {end_time}")
@@ -90,7 +89,7 @@ def scheduler():
             logging.error(f"Error in scheduler: {e}", exc_info=True)
 
  
-schedule.every(250).minutes.do(scheduler)
+schedule.every(300).minutes.do(scheduler)
 
 def run_scheduler():
     while True:

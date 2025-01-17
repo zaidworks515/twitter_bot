@@ -5,3 +5,4 @@ python-dotenv
 mysql-connector-python
 schedule
 pytz
+regex

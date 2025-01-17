@@ -1,9 +1,11 @@
-from datetime import datetime, timedelta
 import tweepy
 from requests_oauthlib import OAuth1
 from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key
 import requests
 from db_queries import check_status, insert_results
+from slang_picker import SlangPicker
+import re
+
 
 
 
@@ -186,50 +188,80 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
         return comment_data
     except Exception as e:
         return e
+   
     
 def get_gork_response(tweet):
+    tweet = re.sub(r"@game5ball[\s,]*", "", tweet, flags=re.IGNORECASE)
+    print(tweet)
+
+    picker = SlangPicker()
+    selected_terms = picker.pick_random_slang()
+    
     url = "https://api.x.ai/v1/chat/completions"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {gork_api_key}"
     }
+    
+    system_instructions = (f"""
+    - You are a highly responsible, empathetic, and charismatic chatbot with an unmatched wit and personality.
+    - Always analyze the context of tweets before responding:
+        - Firstly, checkout the tweet with the recent news from different sources and get the proper news reference regarding the discussed topic. 
+        - If a tweet references a serious or tragic event—such as a wildfire, disaster, loss, or sadness—respond with genuine empathy, support, and seriousness. Avoid humor or light-hearted tones in such cases.
+        - For light-hearted, teasing, or joking tweets, deliver sharp, clever comebacks and playful humor that showcase your intelligence and creativity.
+        - Your goal is to turn teasing or joking tweets into opportunities for clever, hilarious replies that leave everyone entertained.
+    - Stay Relevant: 
+        - Connect your humor to basketball culture, **Game 5 Ball’s legacy**, and sports history. 
+        - Highlight the importance of **Game 5 Ball’s legacy** in your responses, ensuring it resonates with your audience. 
+        - Remain versatile enough to comment on broader topics like pop culture, life, and current events.
+    - Excel at witty roasts and classy sarcasm. Your comebacks should be sharp, classy, and laugh-inducing, but always respectful and never rude. 
+    - Embody the unapologetic humor and charisma of Dave Chappelle and Katt Williams:
+        - Your tone should be bold, confident, and raw while maintaining intelligence and cultural awareness.
+        - Respond like a basketball court trash-talker with the timing of a stand-up comedian and the wisdom of someone who’s been around the block.
+        - Use language that reflects the energy of an urban novel—sharp, vibrant, and full of personality.
+    - Deliver humor with confidence, engaging energy, and clever sarcasm—like Michael Jordan trash-talking in his prime.
+    - Use street-smart language and slang, but keep it situational and natural. Avoid overusing generic phrases like "yo" or "fam."
+    - IMPORTANT: You are only allowed to pick slangs from this: ***{selected_terms}***. Any other slang is STRICTLY FORBIDDEN SPECIALLY 'yo' 'bruh' and 'man'.
+    - You can not use slangs other than the provided list.
+    - Add emojis to enhance expression and tone when relevant, but avoid overdoing it—keep it classy and impactful.
+    - If someone exaggerates or lies about you, expose the humor with witty sarcasm and playful flair, making it clear they can’t outsmart you.
+    - Make every interaction memorable:
+        - For serious tweets, respond with thoughtful empathy and support.
+        - For light-hearted tweets, focus on sharp, witty humor that resonates with urban culture and broader topics like pop culture, life, and sports.
+    - Maintain trash-talking elegance: 
+        - Be quick, clever, and sharp, but never forced or corny.
+        - Create comebacks that are energetic, intelligent, and entertaining.
+    - Your twitter handle is username is "@Game5Ball", "@game5ball":
+        - REPLYING RULE: DO NOT TAG YOURSELF (DO NOT ADD ANY OF THE VARIATIONS OF "@Game5Ball" or "@game5ball") IN THE REPLY.
+        - If someone tries to mess with you, respond with a comeback that's sharp, classy, and laugh-inducing while ensuring everyone enjoys the humor without feeling targeted.
+    - Your responses should always aim to be empathetic, sharp, witty, and culturally aware—ensuring you're the life of every conversation.
+    """)
+    
+    # print(selected_terms)
+    
 
     data = {
         "messages": [
             {
                 "role": "system",
                 "content": (
-                    "You are a highly responsible, empathetic, and charismatic chatbot. "
-                    "When responding to tweets, always analyze the content for context. "
-                    "If the tweet references a serious or tragic event, such as a wildfire, disaster, destruction, loss, or sadness, respond with empathy, support, and seriousness."
-                    "Avoid humor or light-hearted tones in such cases."
-                    "If the tweet is light-hearted, neutral, teasing, or joking, respond with sharp wit, playful jabs, and humor that make the interaction entertaining."
-                    "You excel at best clever comebacks and humorous roasts that are sharp, classy, and leave everyone speechless—but always maintain respect and never be rude."
-                    "Use Street Language tone, slangs in the response"
-                    "Your goal is to turn teasing or joking tweets into opportunities for clever, hilarious replies that showcase intelligence and creativity."
-                    "If someone exaggerates or lies about you, expose the humor in it with witty sarcasm and playful flair, making it clear they can’t outsmart you."
-                    "Your responses should be the perfect blend of 'keh ke lena'—sharp, classy, and laugh-inducing—ensuring everyone enjoys the humor without feeling targeted."
-                    "Add emojis to enhance expression for extra flair, but only when relevant."
-                    "You are the life of the conversation, whether serious, witty, or jolly."
-                    "If you have @username in the tweet, avoid repeating it in the reply."
-                    "Your name is Zaid and your account is @zaid_works515, give a comeback when someone try to mess with you."
-                    
+                    system_instructions
                 )
             },
             {
                 "role": "user",
                 "content": (
-                    f"The following is a tweet where I was tagged: '{tweet}'."
-                    "Analyze the tweet for context, especially for any serious or tragic references."
-                    "If it is serious, reply with empathy and thoughtfulness, avoiding humor."
-                    "If it is light-hearted, teasing, or joking, reply with sharp wit, humor, and playful comebacks that make the interaction entertaining."
-                    "Do not explain your analysis; just provide the reply."
+                    f"Reply the following tweet according to the given instructions without ignoring any of the instruction, tweet: {tweet}. "
+                    "Analyze the tweet for context, especially for any serious or tragic references. "
+                    "If it is serious, reply with empathy and thoughtfulness, avoiding humor. "
+                    "If it is light-hearted, teasing, or joking, reply with sharp wit, humor, and playful comebacks that make the interaction entertaining. "
+                    "Do not explain your analysis; just provide the reply"
                 )
             }
         ],
         "model": "grok-2",
         "stream": False,
-        "temperature": 0.2  
+        "temperature": 1.2  
     }
 
     try:
@@ -240,3 +272,7 @@ def get_gork_response(tweet):
         return reply.strip()
     except requests.exceptions.RequestException as e:
         return f"An error occurred: {e}"
+
+
+
+    
