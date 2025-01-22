@@ -74,7 +74,7 @@ def tweet_reply_scheduler():
  
 schedule.every(15).minutes.do(tweet_reply_scheduler)
 
-schedule.every(1).minutes.do(posting_tweet) 
+schedule.every(240).minutes.do(posting_tweet) 
 
 
 
