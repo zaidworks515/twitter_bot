@@ -1,6 +1,6 @@
-from flask import Flask, request, jsonify
+from flask import Flask
 from flask_cors import CORS
-from twitter_functions import post_tweet, reply_tweet, reply_tagged_tweet
+from twitter_functions import post_tweet, reply_tagged_tweet
 import logging
 from config import port, username
 from datetime import datetime, timedelta
@@ -15,58 +15,38 @@ CORS(app)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
+categories = ['tech', 'Artificial Intelligence', 'top sports news', 'Basketball', 'crypto', 'trending']
 
-@app.route("/post_tweet", methods=['POST'])
-def post_tweet_endpoint():
-    data = request.json
-    try:
-        if not data or 'text' not in data:
-            return jsonify({'status': False, 'message': 'Missing "text" in the request payload'}), 400
+current_category_index = 0  
 
-        text = data.get('text')
-        if not text.strip():
-            return jsonify({'status': False, 'message': 'Tweet "text" cannot be empty'}), 400
+post_scheduler_lock = threading.Lock()
 
-        tweet = post_tweet(text=text)  # will return a dictionary
+def posting_tweet():
+    with post_scheduler_lock:
+        global current_category_index
 
-        if tweet:
-            return jsonify({'status': True, 'data': tweet}), 200
-        else:
-            return jsonify({'status': False, 'message': 'Failed to post the tweet'}), 500
+        try:
+            category = categories[current_category_index] 
 
-    except Exception as e:
-        return jsonify({'status': False, 'message': str(e)}), 500
-         
-   
-@app.route("/reply_tweet", methods=['POST'])
-def reply_tweet_endpoint():
-    data = request.json
-    username = data.get('username')
-    reply_text = data.get('reply_text')
-    # print(username, reply_text)
-    
-    try:
-        if not username or not reply_text:
-            return jsonify({'status': False, 'message': 'Missing "data or reply text or username" in the request payload'}), 400
+            logging.info(f"Posting tweet for category: {category}")
+            tweet = post_tweet(tweet_category=category)
+            if tweet:
+                logging.info("Tweet posted successfully!")
+                current_category_index = (current_category_index + 1) % len(categories)
+            else:
+                logging.info("No tweet was posted.")
+                current_category_index = (current_category_index + 1) % len(categories)
 
-        
-        if not reply_text.strip():
-            return jsonify({'status': False, 'message': 'Tweet "text" cannot be empty'}), 400
 
-        response_reply_tweet = reply_tweet(username=username, reply_text=reply_text)  # will return a dictionary
+        except Exception as e:
+            current_category_index = (current_category_index + 1) % len(categories)
+            logging.error(f"Error in post_tweet: {e}", exc_info=True)
 
-        if response_reply_tweet:
-            return jsonify({'status': True, 'data': response_reply_tweet}), 200
-        else:
-            return jsonify({'status': False, 'message': 'Failed to post the reply of the given tweet'}), 500
 
-    except Exception as e:
-        return jsonify({'status': False, 'message': str(e)}), 500
  
-scheduler_lock = threading.Lock()
-
-def scheduler():
-    with scheduler_lock:
+reply_scheduler_lock = threading.Lock()
+def tweet_reply_scheduler():
+    with reply_scheduler_lock:
         # netherlands_tz = pytz.timezone("Europe/Amsterdam")
 
         now = datetime.now()  
@@ -89,7 +69,14 @@ def scheduler():
             logging.error(f"Error in scheduler: {e}", exc_info=True)
 
  
-schedule.every(15).minutes.do(scheduler)
+ 
+ 
+ 
+schedule.every(15).minutes.do(tweet_reply_scheduler)
+
+schedule.every(1).minutes.do(posting_tweet) 
+
+
 
 def run_scheduler():
     while True:

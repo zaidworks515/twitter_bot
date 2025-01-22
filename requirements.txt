@@ -4,5 +4,5 @@ flask-cors
 python-dotenv
 mysql-connector-python
 schedule
-pytz
 regex
+sentence-transformers

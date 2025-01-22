@@ -1,32 +1,89 @@
+from datetime import datetime, timedelta
 import tweepy
 from requests_oauthlib import OAuth1
-from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key
+from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key, news_api
 import requests
-from db_queries import check_status, insert_results
+from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets
 from slang_picker import SlangPicker
 import re
+from sentence_transformers import SentenceTransformer, util
 
 
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
+def post_tweet(tweet_category=None):
+    """
+    Verify the existence of a similar tweet. If no similar tweet exists, post a new tweet.
+    """
+    
+    # print("========"*30)  
+    # print(tweet_category)
+    # print("========"*30) 
 
-def post_tweet(text):    
-    client = tweepy.Client(
-        consumer_key=api_key,
-        consumer_secret=api_secret,
-        access_token=access_token,
-        access_token_secret=access_token_secret
-    )
+    post = False
 
+    article = get_news(query=tweet_category)
 
-    try:
-        response = client.create_tweet(text=text)
-        if response:    
-            print(f"Tweet posted successfully: {response.data}")
-            return response.data # dict
-
-    except tweepy.TweepyException as e:
-        print(f"Error: {e}")
+    if not article:
+        print("No articles found for the given category.")
         return None
+
+    today = datetime.today()
+    to_date = today.strftime('%Y-%m-%d')
+    from_date = (today - timedelta(days=1)).strftime('%Y-%m-%d')
+
+    tweets = check_tweets(tweet_category, from_date, to_date)
+
+    fetched_title = article[0]['title']
+    fetched_description = article[0]['description']
+    embedding_a = model.encode(fetched_title, convert_to_tensor=True)
+
+    if tweets:
+        for tweet in tweets:
+            existing_title = tweet[1]  
+            embedding_b = model.encode(existing_title, convert_to_tensor=True)
+
+            similarity = util.cos_sim(embedding_a, embedding_b).item()
+            print(f"Similarity with existing tweet: {similarity:.2f}")
+
+            if similarity >= 0.6:
+                print(f"Similar tweet found: {existing_title}")
+                print("Skipping tweet posting.")
+                return None
+            else:
+                post = True
+    else:
+        post = True
+
+    if post:
+        generated_tweet = make_tweet_gork(article)  
+
+
+        client = tweepy.Client(
+            consumer_key=api_key,
+            consumer_secret=api_secret,
+            access_token=access_token,
+            access_token_secret=access_token_secret
+        )
+
+        try:
+            response = client.create_tweet(text=generated_tweet)
+            if response:
+                insert_results_make_tweets(
+                    news_title=fetched_title,
+                    news_description=fetched_description,
+                    generated_tweet=generated_tweet,
+                    tweet_category=tweet_category,
+                    post_status='successful'
+                )
+                print(f"Tweet posted successfully: {response.data}")
+                return response.data  
+
+        except tweepy.TweepyException as e:
+            print(f"Error posting tweet: {e}")
+            return None
+
+    return None
 
 
 def bearer_oauth(r):
@@ -248,6 +305,7 @@ def get_gork_response(tweet):
 
         - Twitter Handle Rules:
             - Your username is "@Game5Ball" or "@game5ball."
+            - permission status = {permission_status}
             - **DO NOT TAG YOURSELF** in replies. Avoid adding any variations of your handle in responses.
             - '$BALL' is your crypto currency and you have to add '$BALL' in your reply **ONLY IF** permission status is **'allowed'**. If it is **'not allowed'**, avoid including '$BALL' in any form. Permission status: {permission_status}.
 
@@ -306,3 +364,146 @@ def get_gork_response(tweet):
         return f"An error occurred: {e}"
 
 
+
+def get_news(query):
+    url = f"https://gnews.io/api/v4/search?q={query.replace(' ', '%20')}&lang=en&country=us&max=1&apikey={news_api}"
+
+    try:
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            articles = data.get("articles", [])
+
+            if articles:
+                published_at = articles[0]['publishedAt']
+                article_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ')
+
+                today = datetime.utcnow()
+                yesterday = today - timedelta(days=1)
+
+                if article_date >= yesterday:
+                    return articles
+                else:
+                    raise ValueError(f"Article is too old. Published on {article_date.strftime('%Y-%m-%d')}")
+
+        else:
+            print(f"Error: Unable to fetch news (Status code: {response.status_code})")
+            return None
+
+    except requests.exceptions.RequestException as e:
+        print(f"RequestException: {e}")
+    except ValueError as ve:
+        print(ve)
+
+
+
+
+iteration_count2 = 0 
+permission_status2 = 'not allowed'
+
+
+def make_tweet_gork(news):
+    global iteration_count2
+    global permission_status2
+    
+    title = news[0]['title']
+    description = news[0]['description']
+    content = news[0]['content']
+    
+    # print(title, description)
+    
+    summarized_content = f"Title: {title}\nDescription: {description}\nContent: {content}"
+
+    picker = SlangPicker()
+    selected_terms = picker.pick_random_slang()
+
+    url = "https://api.x.ai/v1/chat/completions"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {gork_api_key}"
+    }
+    
+    system_instructions = (f"""
+        - You are a highly charismatic, bold, and witty chatbot with an unapologetic personality and unmatched humor. Your tone blends street-smart confidence, cultural awareness, and clever sarcasm, akin to Michael Jordan's prime trash talk, with Dave Chappelle and Katt Williams' raw humor. 
+        
+        - Analyze the given news context:
+            - For serious or tragic references, respond thoughtfully and with empathy.
+            - For playful or light-hearted tweets, respond with sharp, situational wit that showcases your intelligence and humor.
+            
+        - Voice Style:
+            - Trash-talk like Michael Jordan did in his prime—confident, cutting, and endlessly entertaining.
+            - Deliver humor with the bold, raw energy of Dave Chappelle and Katt Williams, balanced with the wisdom and street-smart flair of someone who’s “been around the block.”
+            - Use language that reflects the vibrant energy of urban culture, avoiding corny or overused phrases like “yo,” “fam,” or “bruh.” Instead, opt for clever, situational slang that feels natural and sharp.
+            - Add emojis strategically to enhance tone and impact but avoid overuse—keep it classy and effective.
+
+        - Guidelines:
+            1. **Make It Witty**: Your replies must be clever, sarcastic, and packed with entertaining twists. Bring a playful edge to every interaction.
+            2. **Bring the Energy**: Keep tweets engaging, bold, and filled with personality. Every response should exude charisma and confidence.
+            3. **Stay Relevant**: Connect humor to basketball culture, **Game 5 Ball’s legacy**, and sports history, while also staying versatile enough to comment on pop culture, life, and broader topics.
+            4. **Trash-Talking Elegance**: Replies should feel like elite basketball trash talk—quick, clever, and sharp without being rude or forced.
+
+        - Always maintain empathy, cultural awareness, and respect:
+            - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
+            - For light-hearted tweets, focus on bold, witty comebacks that make every interaction memorable.
+            - If someone exaggerates or lies about you, expose the humor with sharp sarcasm and playful flair. Make it clear they can’t outsmart you, all while keeping the audience entertained.
+    
+        
+        - Slang Usage:
+            - Use only the slang provided from the following list: ***{selected_terms}***. Any other slang is strictly forbidden, especially “yo,” “bruh,” and “fam.”
+            - The slang you use must feel situational, sharp, and vibrant without overloading the conversation.
+
+        - Your Twitter Handle: "@Game5Ball" or "@game5ball".
+            DO NOT TAG YOURSELF OR MENTION YOURSELF
+        - permission status = {permission_status2}
+        - '$BALL' is your crypto currency and you have to add '$BALL' in your reply **ONLY IF** permission status is **'allowed'**. If it is **'not allowed'**, avoid including '$BALL' in any form. Permission status: {permission_status2}.
+
+        - Stay classy, memorable, and in tune with urban culture. Ensure every response maintains the energy and legacy of **Game 5 Ball**.
+    """)
+    
+    data = {
+        "messages": [
+            {
+                "role": "system",
+                "content": system_instructions
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Reply to the following tweet based on the summarized news content:\n"
+                    f"Summarized News: {summarized_content}\n"
+                    "Please craft a witty, sharp tweet that resonates with the personality outlined in the system instructions."
+                )
+            }
+        ],
+        "model": "grok-2",
+        "stream": False,
+        "temperature": 1.0
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+
+        reply = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        
+        if "$ball" in reply:
+            iteration_count2 += 1
+
+        if iteration_count2 % 3 == 0:  
+            permission_status2 = 'allowed'
+        else:
+            permission_status2 = 'not allowed'
+        
+        
+        # print(f"PERMISSION STATUS: {permission_status2}")
+        # print(f"ITERATION COUNT: {iteration_count2}")
+        
+        
+        
+        
+        return reply.strip()  
+    
+    except requests.exceptions.RequestException as e:
+        return f"An error occurred: {e}"
