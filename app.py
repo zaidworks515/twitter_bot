@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
-from twitter_functions import post_tweet, reply_tagged_tweet
+# from twitter_functions import post_tweet, reply_tagged_tweet
+from twitter_functions import reply_tagged_tweet
 import logging
 from config import port, username
 from datetime import datetime, timedelta
