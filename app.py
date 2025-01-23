@@ -15,7 +15,7 @@ CORS(app)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-categories = ['tech', 'Artificial Intelligence', 'top sports news', 'Basketball', 'crypto', 'trending']
+categories = ['Artificial Intelligence', 'top sports news', 'Basketball', 'crypto', 'trending', 'tech']
 
 current_category_index = 0  
 
