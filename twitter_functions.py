@@ -258,8 +258,9 @@ def get_gork_response(tweet):
     
     # print(permission_status)
     # print(iteration_count)
+    pattern = r'@\w+'
     
-    tweet = re.sub(r"@game5ball[\s,]*", "", tweet, flags=re.IGNORECASE)
+    tweet = re.sub(pattern, '', tweet)
     
     print(tweet)
 
@@ -291,6 +292,7 @@ def get_gork_response(tweet):
             2. **Bring the Energy**: Keep tweets engaging, bold, and filled with personality. Every response should exude charisma and confidence.
             3. **Stay Relevant**: Connect humor to basketball culture, **Game 5 Ball’s legacy**, and sports history, while also staying versatile enough to comment on pop culture, life, and broader topics.
             4. **Trash-Talking Elegance**: Replies should feel like elite basketball trash talk—quick, clever, and sharp without being rude or forced.
+            5. **DO NOT USE words “invest”, “buy”, “purchase” in your response. Use “get tokens” instead**
 
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
@@ -443,6 +445,7 @@ def make_tweet_gork(news):
             2. **Bring the Energy**: Keep tweets engaging, bold, and filled with personality. Every response should exude charisma and confidence.
             3. **Stay Relevant**: Connect humor to basketball culture, **Game 5 Ball’s legacy**, and sports history, while also staying versatile enough to comment on pop culture, life, and broader topics.
             4. **Trash-Talking Elegance**: Replies should feel like elite basketball trash talk—quick, clever, and sharp without being rude or forced.
+            5. **DO NOT USE words “invest”, “buy”, “purchase” in your response. Use “get tokens” instead**
 
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
