@@ -6,84 +6,84 @@ import requests
 from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets
 from slang_picker import SlangPicker
 import re
-# from sentence_transformers import SentenceTransformer, util
+from sentence_transformers import SentenceTransformer, util
 
 
-# model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# def post_tweet(tweet_category=None):
-#     """
-#     Verify the existence of a similar tweet. If no similar tweet exists, post a new tweet.
-#     """
+def post_tweet(tweet_category=None):
+    """
+    Verify the existence of a similar tweet. If no similar tweet exists, post a new tweet.
+    """
     
-#     # print("========"*30)  
-#     # print(tweet_category)
-#     # print("========"*30) 
+    # print("========"*30)  
+    # print(tweet_category)
+    # print("========"*30) 
 
-#     post = False
+    post = False
 
-#     article = get_news(query=tweet_category)
+    article = get_news(query=tweet_category)
 
-#     if not article:
-#         print("No articles found for the given category.")
-#         return None
+    if not article:
+        print("No articles found for the given category.")
+        return None
 
-#     today = datetime.today()
-#     to_date = today.strftime('%Y-%m-%d')
-#     from_date = (today - timedelta(days=1)).strftime('%Y-%m-%d')
+    today = datetime.today()
+    to_date = today.strftime('%Y-%m-%d')
+    from_date = (today - timedelta(days=1)).strftime('%Y-%m-%d')
 
-#     tweets = check_tweets(tweet_category, from_date, to_date)
+    tweets = check_tweets(tweet_category, from_date, to_date)
 
-#     fetched_title = article[0]['title']
-#     fetched_description = article[0]['description']
-#     embedding_a = model.encode(fetched_title, convert_to_tensor=True)
+    fetched_title = article[0]['title']
+    fetched_description = article[0]['description']
+    embedding_a = model.encode(fetched_title, convert_to_tensor=True)
 
-#     if tweets:
-#         for tweet in tweets:
-#             existing_title = tweet[1]  
-#             embedding_b = model.encode(existing_title, convert_to_tensor=True)
+    if tweets:
+        for tweet in tweets:
+            existing_title = tweet[1]  
+            embedding_b = model.encode(existing_title, convert_to_tensor=True)
 
-#             similarity = util.cos_sim(embedding_a, embedding_b).item()
-#             print(f"Similarity with existing tweet: {similarity:.2f}")
+            similarity = util.cos_sim(embedding_a, embedding_b).item()
+            print(f"Similarity with existing tweet: {similarity:.2f}")
 
-#             if similarity >= 0.6:
-#                 print(f"Similar tweet found: {existing_title}")
-#                 print("Skipping tweet posting.")
-#                 return None
-#             else:
-#                 post = True
-#     else:
-#         post = True
+            if similarity >= 0.6:
+                print(f"Similar tweet found: {existing_title}")
+                print("Skipping tweet posting.")
+                return None
+            else:
+                post = True
+    else:
+        post = True
 
-#     if post:
-#         generated_tweet = make_tweet_gork(article)  
+    if post:
+        generated_tweet = make_tweet_gork(article)  
 
 
-#         client = tweepy.Client(
-#             consumer_key=api_key,
-#             consumer_secret=api_secret,
-#             access_token=access_token,
-#             access_token_secret=access_token_secret
-#         )
+        client = tweepy.Client(
+            consumer_key=api_key,
+            consumer_secret=api_secret,
+            access_token=access_token,
+            access_token_secret=access_token_secret
+        )
 
-#         try:
-#             response = client.create_tweet(text=generated_tweet)
-#             if response:
-#                 insert_results_make_tweets(
-#                     news_title=fetched_title,
-#                     news_description=fetched_description,
-#                     generated_tweet=generated_tweet,
-#                     tweet_category=tweet_category,
-#                     post_status='successful'
-#                 )
-#                 print(f"Tweet posted successfully: {response.data}")
-#                 return response.data  
+        try:
+            response = client.create_tweet(text=generated_tweet)
+            if response:
+                insert_results_make_tweets(
+                    news_title=fetched_title,
+                    news_description=fetched_description,
+                    generated_tweet=generated_tweet,
+                    tweet_category=tweet_category,
+                    post_status='successful'
+                )
+                print(f"Tweet posted successfully: {response.data}")
+                return response.data  
 
-#         except tweepy.TweepyException as e:
-#             print(f"Error posting tweet: {e}")
-#             return None
+        except tweepy.TweepyException as e:
+            print(f"Error posting tweet: {e}")
+            return None
 
-#     return None
+    return None
 
 
 def bearer_oauth(r):

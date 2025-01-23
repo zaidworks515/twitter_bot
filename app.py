@@ -1,7 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-# from twitter_functions import post_tweet, reply_tagged_tweet
-from twitter_functions import reply_tagged_tweet
+from twitter_functions import post_tweet, reply_tagged_tweet
 import logging
 from config import port, username
 from datetime import datetime, timedelta
@@ -16,32 +15,32 @@ CORS(app)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# categories = ['tech', 'Artificial Intelligence', 'top sports news', 'Basketball', 'crypto', 'trending']
+categories = ['tech', 'Artificial Intelligence', 'top sports news', 'Basketball', 'crypto', 'trending']
 
-# current_category_index = 0  
+current_category_index = 0  
 
-# post_scheduler_lock = threading.Lock()
+post_scheduler_lock = threading.Lock()
 
-# def posting_tweet():
-#     with post_scheduler_lock:
-#         global current_category_index
+def posting_tweet():
+    with post_scheduler_lock:
+        global current_category_index
 
-#         try:
-#             category = categories[current_category_index] 
+        try:
+            category = categories[current_category_index] 
 
-#             logging.info(f"Posting tweet for category: {category}")
-#             tweet = post_tweet(tweet_category=category)
-#             if tweet:
-#                 logging.info("Tweet posted successfully!")
-#                 current_category_index = (current_category_index + 1) % len(categories)
-#             else:
-#                 logging.info("No tweet was posted.")
-#                 current_category_index = (current_category_index + 1) % len(categories)
+            logging.info(f"Posting tweet for category: {category}")
+            tweet = post_tweet(tweet_category=category)
+            if tweet:
+                logging.info("Tweet posted successfully!")
+                current_category_index = (current_category_index + 1) % len(categories)
+            else:
+                logging.info("No tweet was posted.")
+                current_category_index = (current_category_index + 1) % len(categories)
 
 
-#         except Exception as e:
-#             current_category_index = (current_category_index + 1) % len(categories)
-#             logging.error(f"Error in post_tweet: {e}", exc_info=True)
+        except Exception as e:
+            current_category_index = (current_category_index + 1) % len(categories)
+            logging.error(f"Error in post_tweet: {e}", exc_info=True)
 
 
  
@@ -75,7 +74,7 @@ def tweet_reply_scheduler():
  
 schedule.every(15).minutes.do(tweet_reply_scheduler)
 
-# schedule.every(240).minutes.do(posting_tweet) 
+schedule.every(240).minutes.do(posting_tweet) 
 
 
 
