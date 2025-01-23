@@ -207,6 +207,27 @@ def fetch_tagged_tweets(username, start_time=None, end_time=None):
     return response.json()
 
 
+
+def get_username(author_id):
+    """
+    Retrieve the username from a given Twitter user ID.
+    """
+    url = f"https://api.twitter.com/2/users/{author_id}"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        "User-Agent": "v2UserLookupPython"
+    }
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code != 200:
+        raise Exception(
+            f"Request returned an error: {response.status_code} {response.text}"
+        )
+    
+    user_data = response.json()
+    return user_data["data"]["username"]
+
+
 def reply_tagged_tweet(username, start_time=None, end_time=None):
     try:
 
@@ -230,8 +251,12 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
                     if reply_text:            
                         comment_text = f"{reply_text}"
                         print("REPLY CREATED BY GORK")
-                    
-                        comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
+                        
+                        to_mention = get_username(author_id=author_id)                        
+                        processed_comment_text = f"@{to_mention} {comment_text}"
+
+                        
+                        comment_data = comment_on_tweet(tweet_id, processed_comment_text, api_key, api_secret, access_token, access_token_secret)
                 
                         if comment_data:
                             # comment_data = comment_data.encode("utf-8")
