@@ -281,8 +281,21 @@ def get_gork_response(tweet):
     global iteration_count
     global permission_status
     
-    # print(permission_status)
-    # print(iteration_count)
+    eth_address_pattern = r"0x[a-fA-F0-9]{40}"
+    
+    eth_key_exist = None
+    match = re.search(eth_address_pattern, tweet)
+
+    if match:
+        eth_key_exist = True
+    else:
+        eth_key_exist = False
+
+
+    if eth_key_exist:
+        return None
+
+        
     pattern = r'@\w+'
     
     tweet = re.sub(pattern, '', tweet)

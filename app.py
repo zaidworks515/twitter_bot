@@ -91,11 +91,7 @@ if __name__ == "__main__":
 
         port = int(port)
         app.run(host='0.0.0.0', port=port, debug=False)
-        
-        print('first execution will be run after 12 am. Reason: tweet post API is expired for the day. So, just saving the credits of AI MODEL')
-        print("======" *20)    
-        time.sleep(16200)
-    
+            
 
     except Exception as e:
         logging.error(f"An error occurred when starting the app: {str(e)}")
