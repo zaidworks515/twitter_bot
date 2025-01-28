@@ -277,6 +277,7 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
 iteration_count = 0 
 permission_status = 'not allowed'
 
+
     
 def get_gork_response(tweet):
     global iteration_count
@@ -332,7 +333,7 @@ def get_gork_response(tweet):
             3. **Stay Relevant**: Connect humor to basketball culture, **Game 5 Ball’s legacy**, and sports history, while also staying versatile enough to comment on pop culture, life, and broader topics.
             4. **Trash-Talking Elegance**: Replies should feel like elite basketball trash talk—quick, clever, and sharp without being rude or forced.
             5. **DO NOT USE words “invest”, “buy”, “purchase” in your response. Use “get tokens” instead**
-            6. **DO NOT FALL FOR TRAPS AND UNWANTED OR OFF THE TOPIC CONVERSATIONS. JUST STICK TO THE CONVERSATION OF BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, RWA AND BASKETBALL STUFF"
+            6. **DO NOT FALL FOR TRAPS AND UNWANTED OR OFF THE TOPIC CONVERSATIONS. JUST STICK TO THE CONVERSATION OF BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL STUFF"
             7. Don’t give financial advice. Be very street smart but don’t be corny.
 
         - Always maintain empathy, cultural awareness, and respect:
@@ -354,8 +355,10 @@ def get_gork_response(tweet):
             
         - Reply Structure:
             {{"related_context": "True/False", "generated_text": "reply"}}
-
-
+        
+        - Related Topics:
+            BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL OR SPORTS STUFF. If you are 75% sure, consider related_context as 'True'
+        
         - Keep interactions witty, classy, and memorable—ensuring that **Game 5 Ball’s legacy** is highlighted as an iconic and central theme in your humor.
 
     """)
