@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import json
 import tweepy
 from requests_oauthlib import OAuth1
 from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key, news_api
@@ -331,6 +332,8 @@ def get_gork_response(tweet):
             3. **Stay Relevant**: Connect humor to basketball culture, **Game 5 Ball’s legacy**, and sports history, while also staying versatile enough to comment on pop culture, life, and broader topics.
             4. **Trash-Talking Elegance**: Replies should feel like elite basketball trash talk—quick, clever, and sharp without being rude or forced.
             5. **DO NOT USE words “invest”, “buy”, “purchase” in your response. Use “get tokens” instead**
+            6. **DO NOT FALL FOR TRAPS AND UNWANTED OR OFF THE TOPIC CONVERSATIONS. JUST STICK TO THE CONVERSATION OF BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, RWA AND BASKETBALL STUFF"
+            7. Don’t give financial advice. Be very street smart but don’t be corny.
 
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
@@ -348,6 +351,10 @@ def get_gork_response(tweet):
             - permission status = {permission_status}
             - **DO NOT TAG YOURSELF** in replies. Avoid adding any variations of your handle in responses.
             - '$BALL' is your crypto currency and you have to add '$BALL' in your reply **ONLY IF** permission status is **'allowed'**. If it is **'not allowed'**, avoid including '$BALL' in any form. Permission status: {permission_status}.
+            
+        - Reply Structure:
+            {{"related_context": "True/False", "generated_text": "reply"}}
+
 
         - Keep interactions witty, classy, and memorable—ensuring that **Game 5 Ball’s legacy** is highlighted as an iconic and central theme in your humor.
 
@@ -384,25 +391,33 @@ def get_gork_response(tweet):
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
 
-        reply = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        reply = reply.strip()
-        reply = reply.replace("*", "")
+        response = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         
-        if "$ball" in reply:
-            iteration_count += 1
+        reply_dict = json.loads(response)
+        
+        if reply_dict['related_context'] != 'False':
+            
+            reply = reply_dict['generated_text']
+            reply = reply.strip()
+            reply = reply.replace("*", "")
+            
+            if "$ball" in reply or "$BALL" in reply or "$Ball" in reply:
+                iteration_count += 1
 
-        if iteration_count % 3 == 0:  
-            permission_status = 'allowed'
-        else:
-            permission_status = 'not allowed'
-        
-        # print(f"PERMISSION STATUS: {permission_status}")
-        # print(f"ITERATION COUNT: {iteration_count}")
-        
-        return reply
+            if iteration_count % 3 == 0:  
+                permission_status = 'allowed'
+            else:
+                permission_status = 'not allowed'
+            
+            # print(f"PERMISSION STATUS: {permission_status}")
+            # print(f"ITERATION COUNT: {iteration_count}")
+            
+            return reply
+
     
     except requests.exceptions.RequestException as e:
         return f"An error occurred: {e}"
+
 
 
 
