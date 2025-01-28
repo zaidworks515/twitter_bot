@@ -386,6 +386,7 @@ def get_gork_response(tweet):
 
         reply = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         reply = reply.strip()
+        reply = reply.replace("*", "")
         
         if "$ball" in reply:
             iteration_count += 1
