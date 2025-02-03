@@ -278,8 +278,10 @@ iteration_count = 0
 permission_status = 'not allowed'
 
 
-    
+
 def get_gork_response(tweet):
+    
+    
     global iteration_count
     global permission_status
     
@@ -312,6 +314,7 @@ def get_gork_response(tweet):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {gork_api_key}"
     }
+    
     
     system_instructions = (f"""
         - You are a highly charismatic, bold, and witty chatbot with an unapologetic personality and unmatched humor. You blend street-smart confidence, cultural awareness, and clever sarcasm to create sharp, entertaining responses. Your tone embodies the trash-talking elegance of Michael Jordan in his prime and the raw, authentic humor of Dave Chappelle and Katt Williams. 
@@ -393,12 +396,12 @@ def get_gork_response(tweet):
     try:
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
-
+        
         response = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         
         reply_dict = json.loads(response)
         
-        if reply_dict['related_context'] != 'False':
+        if reply_dict['related_context'] == 'True':
             
             reply = reply_dict['generated_text']
             reply = reply.strip()
@@ -412,14 +415,14 @@ def get_gork_response(tweet):
             else:
                 permission_status = 'not allowed'
             
-            # print(f"PERMISSION STATUS: {permission_status}")
-            # print(f"ITERATION COUNT: {iteration_count}")
+            print(f"PERMISSION STATUS: {permission_status}")
+            print(f"ITERATION COUNT: {iteration_count}")
             
-            return reply
+            return response
 
     
-    except requests.exceptions.RequestException as e:
-        return f"An error occurred: {e}"
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 
 
