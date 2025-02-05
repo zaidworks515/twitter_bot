@@ -418,7 +418,7 @@ def get_gork_response(tweet):
             print(f"PERMISSION STATUS: {permission_status}")
             print(f"ITERATION COUNT: {iteration_count}")
             
-            return response
+            return reply
 
     
     except Exception as e:
