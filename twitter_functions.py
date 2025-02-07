@@ -121,8 +121,8 @@ def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, acce
     return comment_data
 
 
-def reply_tweet(username=None, reply_text=None):
-    # print(username, reply_text)
+def reply_tweet(username=None, start_time=None, end_time=None):
+    
     user_url = f"https://api.twitter.com/2/users/by/username/{username}"
     
     user_response = requests.get(user_url, headers={"Authorization": f"Bearer {bearer_token}"})
@@ -135,29 +135,56 @@ def reply_tweet(username=None, reply_text=None):
 
     print(f"User ID of {username}: {user_id}")
 
-    tweets_url = f"https://api.twitter.com/2/users/{user_id}/tweets?max_results=5"
+    tweets_url = f"https://api.twitter.com/2/users/{user_id}/tweets"
 
+    params = {
+        "tweet.fields": "created_at,author_id",
+        "start_time": start_time,
+        "end_time": end_time
+    }
+
+    response = requests.get(tweets_url, headers={"Authorization": f"Bearer {bearer_token}"}, params=params)
     
-    response = requests.request("GET", tweets_url, auth=bearer_oauth)
     if response.status_code != 200:
-        raise Exception(
-            "Request returned an error: {} {}".format(
-                response.status_code, response.text
-            )
-        )
+        raise Exception(f"Request returned an error: {response.status_code} {response.text}")
+
     json_response = response.json()
+    print(json_response)
     
-    tweet_id = json_response["data"][0]['id']
-    tweet_text = json_response["data"][0]['text']  #will use it later with GORK RESPONSE
-    
-    comment_text = f"@{username} {reply_text}"
-    
-    comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
-    
-    if comment_data:
-        return comment_data
-    else:
+    if "data" not in json_response or len(json_response["data"]) == 0:
+        print(f"No tweets found for {username} in the given timeframe.")
         return None
+    
+    for data in json_response['data']:
+        tweet_id = data['id']
+        tweet_text = data['text']
+        author_id = data['author_id']
+        
+        status = check_status(tweet_id)
+        
+        if status != 'successful' or not status:
+            reply_text = get_gork_response(tweet_text)
+                       
+            if reply_text:            
+                comment_text = f"{reply_text}"
+                print("REPLY CREATED BY GORK")
+                
+                # to_mention = get_username(author_id=author_id)                        
+                # processed_comment_text = f"{comment_text}"
+                
+                comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
+        
+                if comment_data:
+                    print('Comment Successful..........')
+                    id = insert_results(tagged_tweet_id=tweet_id, 
+                                        author_id=author_id, 
+                                        tagged_tweet=tweet_text, 
+                                        replied_comments=comment_text, 
+                                        post_status='successful')
+        
+    
+    
+    return 'Task Successful'
     
     
 def bearer_oauth2(r):
