@@ -1,6 +1,6 @@
 from flask import Flask
 from flask_cors import CORS
-from twitter_functions import post_tweet, reply_tagged_tweet
+from twitter_functions import post_tweet, reply_tagged_tweet, reply_tweet
 import logging
 from config import port, username
 from datetime import datetime, timedelta
@@ -69,9 +69,34 @@ def tweet_reply_scheduler():
             logging.error(f"Error in scheduler: {e}", exc_info=True)
 
  
- 
- 
- 
+selected_reply_scheduler_lock = threading.Lock()
+def selected_reply_scheduler():
+    with selected_reply_scheduler_lock:
+        accounts_list = ["ScottiePippen", "saylor", "elonmusk", "espn", "SportsCenter", 
+                        "bleacherreport", "patrickbetdavid", "rovercrc", "RWAwatchlist_", 
+                        "rawalerts", "AutismCapital", "MarioNawfal", "DailyLoud", "Cointelegraph", 
+                        "EricTrump", "RealAlexJones", "BallIsLife", "VitalikButerin", "Ashcryptoreal"
+                        ]
+        
+        now = datetime.now()  
+
+        end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        interval = now - timedelta(hours=15)
+        start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        try:
+            for username in accounts_list:
+                reply_tweet(username, start_time=start_time, end_time=end_time)
+            
+            print('tweets replied of selected accounts..')
+            
+        except Exception as e:
+            print(f"An error occur: {e}") 
+            
+
+
+schedule.every(17).minutes.do(selected_reply_scheduler)
 schedule.every(15).minutes.do(tweet_reply_scheduler)
 
 schedule.every(240).minutes.do(posting_tweet) 
