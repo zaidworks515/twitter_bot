@@ -85,15 +85,20 @@ def selected_reply_scheduler():
         interval = now - timedelta(hours=15)
         start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        try:
-            for username in accounts_list:
+
+        for username in accounts_list:
+            try:
+                print(f"Processing {username}...")
                 reply_tweet(username, start_time=start_time, end_time=end_time)
-            
-            print('tweets replied of selected accounts..')
-            
-        except Exception as e:
-            print(f"An error occur: {e}") 
-            
+                time.sleep(2)  
+                
+            except Exception as e:
+                print(f"Error while replying to {username}: {e}")
+                continue        
+                
+        print("Finished replying to selected accounts.")      
+
+
 
 
 schedule.every(17).minutes.do(selected_reply_scheduler)
