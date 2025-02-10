@@ -75,37 +75,36 @@ def selected_reply_scheduler():
         accounts_list = ["ScottiePippen", "saylor", "elonmusk", "espn", "SportsCenter", 
                         "bleacherreport", "patrickbetdavid", "rovercrc", "RWAwatchlist_", 
                         "rawalerts", "AutismCapital", "MarioNawfal", "DailyLoud", "Cointelegraph", 
-                        "EricTrump", "RealAlexJones", "BallIsLife", "VitalikButerin", "Ashcryptoreal"
+                        "EricTrump", "RealAlexJones", "BallIsLife", "VitalikButerin", "Ashcryptoreal",
+                        "cz_binance", "alx", "nba", "KDTrey5", "KingJames", "ESPNNBA", "stephenasmith", 
+                        "barstoolsports", "binance", "coinmarketcap", "coinbase", "coingecko", "brian_armstrong",
+                        "AltcoinDailyio", "WatcherGuru"
                         ]
         
         now = datetime.now()  
 
         end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        interval = now - timedelta(hours=15)
+        interval = now - timedelta(hours=13)
         start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
-        
-        for i in range(0, len(accounts_list), 5):  # Process 5 accounts at a time
-            batch = accounts_list[i:i+5]
-            for username in batch:
-                try:
-                    print(f"Processing {username}...")
-                    reply_tweet(username, start_time=start_time, end_time=end_time)
-                    time.sleep(2)
-                     
-                except Exception as e:
-                    print(f"Error while replying to {username}: {e}")  
-                    continue
-            
-            if i + 5 < len(accounts_list):
-                print("Rate limit reached. Waiting 20 minutes before continuing...")
-                time.sleep(1200)
 
+
+        for username in accounts_list:
+            try:
+                print(f"Processing {username}...")
+                reply_tweet(username, start_time=start_time, end_time=end_time)
+                time.sleep(1200)  
+                
+            except Exception as e:
+                print(f"Error while replying to {username}: {e}")
+                continue        
+                
         print("Finished replying to selected accounts.")      
 
 
-schedule.every(130).minutes.do(selected_reply_scheduler)
 
+
+# schedule.every(680).minutes.do(selected_reply_scheduler)
 schedule.every(15).minutes.do(tweet_reply_scheduler)
 
 schedule.every(240).minutes.do(posting_tweet) 
@@ -115,7 +114,7 @@ schedule.every(240).minutes.do(posting_tweet)
 def run_scheduler():
     while True:
         schedule.run_pending()
-        time.sleep(10)
+        time.sleep(1)
       
 
 if __name__ == "__main__":
