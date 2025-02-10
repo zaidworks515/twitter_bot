@@ -84,24 +84,28 @@ def selected_reply_scheduler():
 
         interval = now - timedelta(hours=15)
         start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
+        
+        for i in range(0, len(accounts_list), 5):  # Process 5 accounts at a time
+            batch = accounts_list[i:i+5]
+            for username in batch:
+                try:
+                    print(f"Processing {username}...")
+                    reply_tweet(username, start_time=start_time, end_time=end_time)
+                    time.sleep(2)
+                     
+                except Exception as e:
+                    print(f"Error while replying to {username}: {e}")  
+                    continue
+            
+            if i + 5 < len(accounts_list):
+                print("Rate limit reached. Waiting 20 minutes before continuing...")
+                time.sleep(1200)
 
-
-        for username in accounts_list:
-            try:
-                print(f"Processing {username}...")
-                reply_tweet(username, start_time=start_time, end_time=end_time)
-                time.sleep(2)  
-                
-            except Exception as e:
-                print(f"Error while replying to {username}: {e}")
-                continue        
-                
         print("Finished replying to selected accounts.")      
 
 
+schedule.every(130).minutes.do(selected_reply_scheduler)
 
-
-schedule.every(17).minutes.do(selected_reply_scheduler)
 schedule.every(15).minutes.do(tweet_reply_scheduler)
 
 schedule.every(240).minutes.do(posting_tweet) 
@@ -111,7 +115,7 @@ schedule.every(240).minutes.do(posting_tweet)
 def run_scheduler():
     while True:
         schedule.run_pending()
-        time.sleep(1)
+        time.sleep(10)
       
 
 if __name__ == "__main__":
