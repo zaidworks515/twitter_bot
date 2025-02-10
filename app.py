@@ -105,6 +105,7 @@ def selected_reply_scheduler():
 
 
 # schedule.every(680).minutes.do(selected_reply_scheduler)
+
 schedule.every(15).minutes.do(tweet_reply_scheduler)
 
 schedule.every(240).minutes.do(posting_tweet) 
