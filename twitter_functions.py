@@ -156,45 +156,45 @@ def reply_tweet(username=None, start_time=None, end_time=None):
         return None
     
     for row in json_response['data']:
-            author_id = row['author_id']
-            tweet_id = row['id']
-            tweet_text = row['text']
-            conversation_id = row.get('conversation_id')
-            
-            if tweet_id and author_id and tweet_text and conversation_id:  
-                status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
-                print("STATUS CHECKED....")
-
-                if is_reply == 'True':
-                    print('reply already given')
-                elif is_reply == 'False':
-                    print('NO previous replies found') 
+        author_id = row['author_id']
+        tweet_id = row['id']
+        tweet_text = row['text']
+        conversation_id = row.get('conversation_id')
         
-                if status != 'successful' or not status:
-                    
-                    reply_text = get_gork_response_for_selected_accounts(tweet_text, is_reply, reply_count, previous_reply)
-                       
-                    if reply_text:            
-                        comment_text = f"{reply_text}"
-                        print("REPLY CREATED BY GORK")
-                        
-                        # to_mention = get_username(author_id=author_id)                        
-                        # processed_comment_text = f"@{to_mention} {comment_text}"
+        if tweet_id and author_id and tweet_text and conversation_id:  
+            status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
+            print("STATUS CHECKED....")
 
-                        
-                        comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
+            if is_reply == 'True':
+                print('reply already given')
+            elif is_reply == 'False':
+                print('NO previous replies found') 
+    
+            if status != 'successful' or not status:
                 
-                        if comment_data:
-                            # comment_data = comment_data.encode("utf-8")
-                            print('Comment Successful..........')
-                            id = insert_results(tagged_tweet_id=tweet_id, 
-                                                author_id=author_id, 
-                                                tagged_tweet=tweet_text, 
-                                                replied_comments=comment_text,
-                                                conversation_id=conversation_id,
-                                                post_status='successful')
-                            
-                        return "Task Successful"
+                reply_text = get_gork_response_for_selected_accounts(tweet_text, is_reply, reply_count, previous_reply)
+                    
+                if reply_text:            
+                    comment_text = f"{reply_text}"
+                    print("REPLY CREATED BY GORK")
+                    
+                    # to_mention = get_username(author_id=author_id)                        
+                    # processed_comment_text = f"@{to_mention} {comment_text}"
+
+                    
+                    comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
+            
+                    if comment_data:
+                        # comment_data = comment_data.encode("utf-8")
+                        print('Comment Successful..........')
+                        id = insert_results(tagged_tweet_id=tweet_id, 
+                                            author_id=author_id, 
+                                            tagged_tweet=tweet_text, 
+                                            replied_comments=comment_text,
+                                            conversation_id=conversation_id,
+                                            post_status='successful')
+                        
+    return "Task Successful"
     
     
 def bearer_oauth2(r):

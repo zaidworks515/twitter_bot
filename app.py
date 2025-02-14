@@ -60,6 +60,10 @@ def tweet_reply_scheduler():
         try:
             json_response = reply_tagged_tweet(username, start_time, end_time)
             if json_response:
+                print("========" * 40)
+                print("JSON RESPONSE REPLY TAGGED TWEET>>>>>")
+                print(json_response)
+                print("========" * 40)
                 logging.info(f"Response Posted: {json_response}")
                 logging.info("=" * 40)
             else:
