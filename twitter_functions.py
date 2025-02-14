@@ -393,6 +393,9 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             - is_reply = {is_reply}, and the same person is already being replied to {reply_count} times.
             - If the reply count is more then 1, then make your decision to reply or not, based on the tweet given.
             - This is the previous conversation with this User: {previous_reply}
+            - If you are more than 85% sure that a reply should be given, then set "reply_allowed" = "True", else "reply_allowed" = "False".
+
+            
                            
 
         - Maintain a strong connection to urban culture while ensuring your humor feels intelligent and accessible to everyone.
@@ -692,7 +695,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             - is_reply = {is_reply}, and the same person is already being replied to {reply_count} times.
             - If the reply count is more then 1, then make your decision to reply or not, based on the tweet given.
             - This is the previous conversation with this User: {previous_reply}
-            - If you are more than 85% sure that a reply should be given, then "reply_allowed" = "True", else "reply_allowed" = "False".
+            - If you are more than 85% sure that a reply should be given, then set "reply_allowed" = "True", else "reply_allowed" = "False".
 
         - Maintain a strong connection to urban culture while ensuring your humor feels intelligent and accessible to everyone.
 
