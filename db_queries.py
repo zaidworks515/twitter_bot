@@ -52,9 +52,12 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
             reply_result = cursor.fetchone()
 
             reply_count = reply_result[0]
+            
+            
 
             is_reply = "True" if reply_result[0] > 0 else "False"
 
+            
             conversation_chain = []
             if is_reply == "True":
                 cursor.execute("SELECT author_id, tagged_tweet FROM tweet_record WHERE conversation_id = %s AND author_id = %s ORDER BY id ASC", (conversation_id, author_id))
@@ -64,7 +67,7 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
                     conversation_chain.append({"User": reply[1], "AI_Response": reply[2]})
 
             if results:
-                post_status = results[-1][0]  # Get the latest post_status
+                post_status = results[-1][-2]  # Get the latest post_status
                 return post_status, is_reply, reply_count, conversation_chain
             else:
                 return None, is_reply, reply_count, conversation_chain
