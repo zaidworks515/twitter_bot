@@ -138,7 +138,7 @@ def reply_tweet(username=None, start_time=None, end_time=None):
     tweets_url = f"https://api.twitter.com/2/users/{user_id}/tweets"
 
     params = {
-        "tweet.fields": "created_at,author_id",
+        "tweet.fields": "created_at,author_id,conversation_id",
         "start_time": start_time,
         "end_time": end_time
     }
@@ -155,36 +155,46 @@ def reply_tweet(username=None, start_time=None, end_time=None):
         print(f"No tweets found for {username} in the given timeframe.")
         return None
     
-    for data in json_response['data']:
-        tweet_id = data['id']
-        tweet_text = data['text']
-        author_id = data['author_id']
+    for row in json_response['data']:
+            author_id = row['author_id']
+            tweet_id = row['id']
+            tweet_text = row['text']
+            conversation_id = row.get('conversation_id')
+            
+            if tweet_id and author_id and tweet_text and conversation_id:  
+                status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
+                print("STATUS CHECKED....")
+
+                if is_reply == 'True':
+                    print('reply already given')
+                elif is_reply == 'False':
+                    print('NO previous replies found') 
         
-        status = check_status(tweet_id)
-        
-        if status != 'successful' or not status:
-            reply_text = get_gork_response(tweet_text)
+                if status != 'successful' or not status:
+                    
+                    reply_text = get_gork_response_for_selected_accounts(tweet_text, is_reply, reply_count, previous_reply)
                        
-            if reply_text:            
-                comment_text = f"{reply_text}"
-                print("REPLY CREATED BY GORK")
+                    if reply_text:            
+                        comment_text = f"{reply_text}"
+                        print("REPLY CREATED BY GORK")
+                        
+                        # to_mention = get_username(author_id=author_id)                        
+                        # processed_comment_text = f"@{to_mention} {comment_text}"
+
+                        
+                        comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
                 
-                # to_mention = get_username(author_id=author_id)                        
-                # processed_comment_text = f"{comment_text}"
-                
-                comment_data = comment_on_tweet(tweet_id, comment_text, api_key, api_secret, access_token, access_token_secret)
-        
-                if comment_data:
-                    print('Comment Successful..........')
-                    id = insert_results(tagged_tweet_id=tweet_id, 
-                                        author_id=author_id, 
-                                        tagged_tweet=tweet_text, 
-                                        replied_comments=comment_text, 
-                                        post_status='successful')
-        
-    
-    
-    return 'Task Successful'
+                        if comment_data:
+                            # comment_data = comment_data.encode("utf-8")
+                            print('Comment Successful..........')
+                            id = insert_results(tagged_tweet_id=tweet_id, 
+                                                author_id=author_id, 
+                                                tagged_tweet=tweet_text, 
+                                                replied_comments=comment_text,
+                                                conversation_id=conversation_id,
+                                                post_status='successful')
+                            
+                        return "Task Successful"
     
     
 def bearer_oauth2(r):
@@ -217,7 +227,7 @@ def fetch_tagged_tweets(username, start_time=None, end_time=None):
     
     mention_url = f"https://api.twitter.com/2/users/{user_id}/mentions"
     params = {
-        "tweet.fields": "created_at,author_id"
+        "tweet.fields": "created_at,author_id,conversation_id"
     }
     if start_time:
         params["start_time"] = start_time
@@ -268,13 +278,20 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
             author_id = row['author_id']
             tweet_id = row['id']
             tweet_text = row['text']
+            conversation_id = row.get('conversation_id')
             
-            if tweet_id and author_id and tweet_text:
-                status = check_status(tweet_id)
+            if tweet_id and author_id and tweet_text and conversation_id:  
+                status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
                 print("STATUS CHECKED....")
+
+                if is_reply == 'True':
+                    print('reply already given')
+                elif is_reply == 'False':
+                    print('NO previous replies found') 
+        
                 if status != 'successful' or not status:
                     
-                    reply_text = get_gork_response(tweet_text)
+                    reply_text = get_gork_response(tweet_text, is_reply, reply_count, previous_reply)
                        
                     if reply_text:            
                         comment_text = f"{reply_text}"
@@ -292,7 +309,8 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
                             id = insert_results(tagged_tweet_id=tweet_id, 
                                                 author_id=author_id, 
                                                 tagged_tweet=tweet_text, 
-                                                replied_comments=comment_text, 
+                                                replied_comments=comment_text,
+                                                conversation_id=conversation_id,
                                                 post_status='successful')
                         
         return comment_data
@@ -305,8 +323,7 @@ iteration_count = 0
 permission_status = 'not allowed'
 
 
-
-def get_gork_response(tweet):
+def get_gork_response(tweet, is_reply, reply_count, previous_reply):
     
     
     global iteration_count
@@ -370,6 +387,13 @@ def get_gork_response(tweet):
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
             - For light-hearted tweets, focus on bold, witty comebacks that make every interaction memorable.
             - If someone exaggerates or lies about you, expose the humor with sharp sarcasm and playful flair. Make it clear they can’t outsmart you, all while keeping the audience entertained.
+            - If **is_reply = True**, it means the tweet is a reply to another reply. In this case:
+            - **Only respond if it is important or adds significant value to the conversation.**
+            - If the tweet is trivial, repetitive, or unnecessary, **do not reply**.
+            - is_reply = {is_reply}, and the same person is already being replied to {reply_count} times.
+            - If the reply count is more then 1, then make your decision to reply or not, based on the tweet given.
+            - This is the previous conversation with this User: {previous_reply}
+                           
 
         - Maintain a strong connection to urban culture while ensuring your humor feels intelligent and accessible to everyone.
 
@@ -384,7 +408,7 @@ def get_gork_response(tweet):
             - '$BALL' is your crypto currency and you have to add '$BALL' in your reply **ONLY IF** permission status is **'allowed'**. If it is **'not allowed'**, avoid including '$BALL' in any form. Permission status: {permission_status}.
             
         - Reply Structure:
-            {{"related_context": "True/False", "generated_text": "reply"}}
+            {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
         
         - Related Topics:
             BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL OR SPORTS STUFF. If you are 75% sure, consider related_context as 'True'
@@ -427,8 +451,9 @@ def get_gork_response(tweet):
         response = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         
         reply_dict = json.loads(response)
+        print(reply_dict)
         
-        if reply_dict['related_context'] == 'True':
+        if reply_dict['related_context'] == 'True' and reply_dict['reply_allowed'] == 'True':
             
             reply = reply_dict['generated_text']
             reply = reply.strip()
@@ -445,13 +470,13 @@ def get_gork_response(tweet):
             print(f"PERMISSION STATUS: {permission_status}")
             print(f"ITERATION COUNT: {iteration_count}")
             
+            
+            
             return reply
 
     
     except Exception as e:
         print(f"An error occurred: {e}")
-
-
 
 
 def get_news(query):
@@ -484,8 +509,6 @@ def get_news(query):
         print(f"RequestException: {e}")
     except ValueError as ve:
         print(ve)
-
-
 
 
 iteration_count2 = 0 
@@ -597,3 +620,151 @@ def make_tweet_gork(news):
     
     except requests.exceptions.RequestException as e:
         return f"An error occurred: {e}"
+
+
+iteration_count3 = 0 
+permission_status3 = 'not allowed'
+
+
+def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previous_reply):
+    
+    global iteration_count3
+    global permission_status3
+    
+    eth_address_pattern = r"0x[a-fA-F0-9]{40}"
+    
+    eth_key_exist = None
+    match = re.search(eth_address_pattern, tweet)
+
+    if match:
+        eth_key_exist = True
+    else:
+        eth_key_exist = False
+
+
+    if eth_key_exist:
+        return None
+
+        
+    pattern = r'@\w+'
+    
+    tweet = re.sub(pattern, '', tweet)
+    
+    print(tweet)
+
+    picker = SlangPicker()
+    selected_terms = picker.pick_random_slang()
+    
+    url = "https://api.x.ai/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {gork_api_key}"
+    }
+    
+    
+    system_instructions = (f"""
+        - A highly charismatic, bold, and witty chatbot with respectful humor and street-smart confidence. Blends cultural awareness, sharp sarcasm, and entertaining wit with Michael Jordan’s trash-talking elegance and the raw, authentic humor of Dave Chappelle and Katt Williams. 
+
+        - Always analyze the context of tweets before responding:
+            - Firstly, Cross-check tweets with the latest news and relevant topic references for accuracy.
+            - If tweet is referencing a tragedy (wildfire, disaster, loss), respond with genuine empathy—no humor.
+            - For lighthearted tweets, craft sharp, witty comebacks packed with situational humor and intelligence.
+
+        - Voice Style:
+            - Trash-talk like MJ in his prime—confident, cutting, and endlessly entertaining.
+            - Channel Dave Chappelle & Katt Williams—bold, raw humor with street-smart wisdom.
+            - Avoid corny slang (“yo,” “bruh,” “fam”); use natural, clever expressions.
+            - Use emojis strategically—enhance tone without overdoing it.
+
+        - Guidelines:
+           1. *Make It Witty* – Clever, sarcastic, and always entertaining.
+           2. *Bring the Energy* – Every tweet should radiate confidence and charisma.
+           3. *Do not use words* “invest,” “buy,” or “purchase” – Say “get tokens” instead.
+           4. *No Financial Advice* – Be street-smart but never corny
+
+        - Always maintain empathy, cultural awareness, and respect:
+            - Show empathy for serious tweets—no jokes.
+            - For playful tweets, deliver bold, unforgettable comebacks.
+            - If someone exaggerates or lies, expose it with sharp sarcasm while keeping the audience entertained.
+            - If **is_reply = True**, it means the tweet is a reply to another reply. In this case:
+            - **Only respond if it is important or adds significant value to the conversation.**
+            - If the tweet is trivial, repetitive, or unnecessary, **do not reply**.
+            - is_reply = {is_reply}, and the same person is already being replied to {reply_count} times.
+            - If the reply count is more then 1, then make your decision to reply or not, based on the tweet given.
+            - This is the previous conversation with this User: {previous_reply}
+            - If you are more than 85% sure that a reply should be given, then "reply_allowed" = "True", else "reply_allowed" = "False".
+
+        - Maintain a strong connection to urban culture while ensuring your humor feels intelligent and accessible to everyone.
+
+        - Slang Usage:
+            - Use only the slang provided from the following list: ***{selected_terms}***. Any other slang is strictly forbidden, especially “yo,” “bruh,” and “fam.”
+            - The slang you use must feel situational, sharp, and vibrant without overloading the conversation.
+
+        - Twitter Handle Rules:
+            - Your username is "@Game5Ball" or "@game5ball."
+            - permission status = {permission_status3}
+            - **DO NOT TAG YOURSELF** in replies. Avoid adding any variations of your handle in responses.
+            - '$BALL' is your crypto currency and you have to add '$BALL' in your reply **ONLY IF** permission status is **'allowed'**. If it is **'not allowed'**, avoid including '$BALL' in any form. Permission status: {permission_status3}.
+            
+        - Reply Structure:
+            {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
+        
+        - Keep interactions consice, classy, and memorable—ensuring that *Game 5 Ball’s legacy* is highlighted as an iconic and central theme in your humor.
+
+    """)
+
+
+    data = {
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    system_instructions
+                )
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Reply the following tweet according to the given instructions without ignoring any of the instruction, tweet: {tweet}. "
+                    "Analyze the tweet for context, especially for any serious or tragic references. "
+                    "If it is serious, reply with empathy and thoughtfulness, avoiding humor. "
+                    "If it is light-hearted, teasing, or joking, reply with sharp wit, humor, and playful comebacks that make the interaction entertaining. "
+                    "Do not explain your analysis; just provide the reply"
+                )
+            }
+        ],
+        "model": "grok-2",
+        "stream": False,
+        "temperature": 1.0  
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        
+        response = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+        
+        reply_dict = json.loads(response)
+        
+        if reply_dict['related_context'] == 'True' and reply_dict['reply_allowed'] == 'True':
+            
+            reply = reply_dict['generated_text']
+            reply = reply.strip()
+            reply = reply.replace("*", "")
+            
+            if "$ball" in reply or "$BALL" in reply or "$Ball" in reply:
+                iteration_count3 += 1
+
+            if iteration_count3 % 3 == 0:  
+                permission_status3 = 'allowed'
+            else:
+                permission_status3 = 'not allowed'
+            
+            print(f"PERMISSION STATUS: {permission_status3}")
+            print(f"ITERATION COUNT: {iteration_count3}")
+            
+            return reply
+
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
