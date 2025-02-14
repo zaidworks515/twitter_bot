@@ -43,10 +43,30 @@ def posting_tweet():
             logging.error(f"Error in post_tweet: {e}", exc_info=True)
 
 
- 
 reply_scheduler_lock = threading.Lock()
 def tweet_reply_scheduler():
+    with reply_scheduler_lock:
+        # netherlands_tz = pytz.timezone("Europe/Amsterdam")
+
+        now = datetime.now()  
+
+        end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        interval = now - timedelta(hours=5)  
+        start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        logging.info(f"Start Time: {start_time}, End Time: {end_time}")
+        
+        try:
+            json_response = reply_tagged_tweet(username, start_time, end_time)
+            if json_response:
+                logging.info(f"Response Posted: {json_response}")
+                logging.info("=" * 40)
+            else:
+                print('No data found to be commented.')
+        except Exception as e:
             logging.error(f"Error in scheduler: {e}", exc_info=True)
+
 
  
 selected_reply_scheduler_lock = threading.Lock()

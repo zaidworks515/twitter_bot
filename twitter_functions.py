@@ -746,7 +746,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
         
         reply_dict = json.loads(response)
         
-        if reply_dict['related_context'] == 'True' and reply_dict['reply_allowed'] == 'True':
+        if reply_dict:
             
             reply = reply_dict['generated_text']
             reply = reply.strip()
