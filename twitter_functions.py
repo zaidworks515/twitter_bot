@@ -280,10 +280,6 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
             tweet_text = row['text']
             conversation_id = row['conversation_id'] 
             
-            print(author_id)
-            print(tweet_id)
-            print(tweet_text)
-            print(conversation_id)
             
             print('before if condition....')
                        
