@@ -44,28 +44,16 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
     if connection:
         cursor = connection.cursor()
         try:
-            print('before query 1')
-            print(f"TAGGED TWEET ID: {tagged_tweet_id}")
-            # cursor.execute("SELECT * FROM tweet_record WHERE tagged_tweet_id = %s", (tagged_tweet_id))
             cursor.execute("SELECT * FROM tweet_record WHERE tagged_tweet_id = %s", (tagged_tweet_id,))
 
             results = cursor.fetchall()
-            print('after query 1')
-
-            print('before query 2')
-            # cursor.execute("SELECT COUNT(*) FROM tweet_record WHERE conversation_id = %s AND author_id = %s", (conversation_id, author_id))
             cursor.execute("SELECT COUNT(*) FROM tweet_record WHERE conversation_id = %s AND author_id = %s", (conversation_id, author_id,))
 
             reply_result = cursor.fetchone()
-            print('after query 2')
 
             reply_count = reply_result[0]
-            print(reply_count)
-            print('after reply count')
 
             is_reply = "True" if reply_result[0] > 0 else "False"
-            print("reply_status ", is_reply)
-            
 
             conversation_chain = []
             if is_reply == "True":
@@ -77,7 +65,6 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
 
             if results:
                 post_status = results[-1][0]  # Get the latest post_status
-                print("Post status:", post_status)
                 return post_status, is_reply, reply_count, conversation_chain
             else:
                 return None, is_reply, reply_count, conversation_chain

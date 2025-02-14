@@ -280,11 +280,8 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
             tweet_text = row['text']
             conversation_id = row['conversation_id'] 
             
-            
-            print('before if condition....')
                        
             if tweet_id and author_id and tweet_text and conversation_id:  
-                print('before status check....')
                 status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
                 print("STATUS CHECKED....")
 
