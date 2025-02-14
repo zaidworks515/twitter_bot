@@ -46,12 +46,16 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
         try:
             print('before query 1')
             print(f"TAGGED TWEET ID: {tagged_tweet_id}")
-            cursor.execute("SELECT * FROM tweet_record WHERE tagged_tweet_id = %s", (tagged_tweet_id))
+            # cursor.execute("SELECT * FROM tweet_record WHERE tagged_tweet_id = %s", (tagged_tweet_id))
+            cursor.execute("SELECT * FROM tweet_record WHERE tagged_tweet_id = %s", (tagged_tweet_id,))
+
             results = cursor.fetchall()
             print('after query 1')
 
             print('before query 2')
-            cursor.execute("SELECT COUNT(*) FROM tweet_record WHERE conversation_id = %s AND author_id = %s", (conversation_id, author_id))
+            # cursor.execute("SELECT COUNT(*) FROM tweet_record WHERE conversation_id = %s AND author_id = %s", (conversation_id, author_id))
+            cursor.execute("SELECT COUNT(*) FROM tweet_record WHERE conversation_id = %s AND author_id = %s", (conversation_id, author_id,))
+
             reply_result = cursor.fetchone()
             print('after query 2')
 
