@@ -50,25 +50,22 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
             cursor.execute("SELECT COUNT(*) FROM tweet_record WHERE conversation_id = %s AND author_id = %s", (conversation_id, author_id,))
 
             reply_result = cursor.fetchone()
-            print(f"REPLY RESULT::: {reply_result}")
 
             reply_count = reply_result[0]
             
 
             is_reply = "True" if reply_result[0] > 0 else "False"
-            print(f"IS REPLY:: {is_reply}")
-
             
+
             conversation_chain = []
             if is_reply == "True":
-                cursor.execute("SELECT author_id, tagged_tweet FROM tweet_record WHERE conversation_id = %s AND author_id = %s ORDER BY id ASC", (conversation_id, author_id))
+                cursor.execute("SELECT author_id, tagged_tweet, replied_comments FROM tweet_record WHERE conversation_id = %s AND author_id = %s ORDER BY id ASC", (conversation_id, author_id))
                 all_replies = cursor.fetchall()
-                print(f"ALL REPLIES::: {all_replies}")
-
+                
                 for reply in all_replies:
                     conversation_chain.append({"User": reply[1], "AI_Response": reply[2]})
 
-                print(f"CONVERSAION CHAIN: {conversation_chain}")
+                # print(f"CONVERSAION CHAIN: {conversation_chain}")
 
             if results:
                 post_status = results[-1][-2]  # Get the latest post_status
