@@ -50,6 +50,7 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
             cursor.execute("SELECT COUNT(*) FROM tweet_record WHERE conversation_id = %s AND author_id = %s", (conversation_id, author_id,))
 
             reply_result = cursor.fetchone()
+            print(f"REPLY RESULT::: {reply_result}")
 
             reply_count = reply_result[0]
             
