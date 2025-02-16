@@ -52,7 +52,7 @@ def tweet_reply_scheduler():
 
         end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        interval = now - timedelta(hours=5)  
+        interval = now - timedelta(hours=4)  
         start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         logging.info(f"Start Time: {start_time}, End Time: {end_time}")
