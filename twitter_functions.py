@@ -241,9 +241,13 @@ def fetch_tagged_tweets(username, start_time=None, end_time=None):
         raise Exception(
             f"Error fetching mentions: {response.status_code} {response.text}"
         )
+        
+    json_response = response.json()
     
-    return response.json()
-
+    if "data" in json_response:
+        return json_response
+    else:
+        return None
 
 
 def get_username(author_id):
@@ -270,55 +274,59 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
     try:
 
         json_response = fetch_tagged_tweets(username, start_time, end_time)
-        print("======= FETCHED RESPONSE =======")
-        print(json_response)
-        comment_data = None
-        
-        for row in json_response['data']:
-            author_id = row['author_id']
-            tweet_id = row['id']
-            tweet_text = row['text']
-            conversation_id = row['conversation_id'] 
+        if json_response:
+            print("======= FETCHED RESPONSE =======")
+            print(json_response)
+            comment_data = None
             
-                       
-            if tweet_id and author_id and tweet_text and conversation_id:  
-                status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
-                print("STATUS CHECKED....")
-
-                if is_reply == 'True':
-                    print('reply already given')
-                elif is_reply == 'False':
-                    print('NO previous replies found') 
-        
-                if status != 'successful' or not status:
-                    
-                    reply_text = get_gork_response(tweet_text, is_reply, reply_count, previous_reply)
-                       
-                    if reply_text:            
-                        comment_text = f"{reply_text}"
-                        print("REPLY CREATED BY GORK")
-                        
-                        to_mention = get_username(author_id=author_id)                        
-                        processed_comment_text = f"@{to_mention} {comment_text}"
-
-                        
-                        comment_data = comment_on_tweet(tweet_id, processed_comment_text, api_key, api_secret, access_token, access_token_secret)
+            for row in json_response['data']:
+                author_id = row['author_id']
+                tweet_id = row['id']
+                tweet_text = row['text']
+                conversation_id = row['conversation_id'] 
                 
-                        if comment_data:
-                            # comment_data = comment_data.encode("utf-8")
-                            print('Comment Successful..........')
-                            id = insert_results(tagged_tweet_id=tweet_id, 
-                                                author_id=author_id, 
-                                                tagged_tweet=tweet_text, 
-                                                replied_comments=comment_text,
-                                                conversation_id=conversation_id,
-                                                post_status='successful')
-                            print(f'data saved against ID: {id}')
-                            print("======" * 10)
                         
-        return comment_data
+                if tweet_id and author_id and tweet_text and conversation_id:  
+                    status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
+                    print("STATUS CHECKED....")
+
+                    if is_reply == 'True':
+                        print('reply already given')
+                    elif is_reply == 'False':
+                        print('NO previous replies found') 
+            
+                    if status != 'successful' or not status:
+                        
+                        reply_text = get_gork_response(tweet_text, is_reply, reply_count, previous_reply)
+                        
+                        if reply_text:            
+                            comment_text = f"{reply_text}"
+                            print("REPLY CREATED BY GORK")
+                            
+                            to_mention = get_username(author_id=author_id)                        
+                            processed_comment_text = f"@{to_mention} {comment_text}"
+
+                            
+                            comment_data = comment_on_tweet(tweet_id, processed_comment_text, api_key, api_secret, access_token, access_token_secret)
+                    
+                            if comment_data:
+                                # comment_data = comment_data.encode("utf-8")
+                                print('Comment Successful..........')
+                                id = insert_results(tagged_tweet_id=tweet_id, 
+                                                    author_id=author_id, 
+                                                    tagged_tweet=tweet_text, 
+                                                    replied_comments=comment_text,
+                                                    conversation_id=conversation_id,
+                                                    post_status='successful')
+                                print(f'data saved against ID: {id}')
+                                print("======" * 10)
+                            
+            return comment_data
+        
+        else:
+            return "NO RESPONSE POSTED....."
     except Exception as e:
-        return e
+        print(f"AN ERROR OCCURED: {e}")
    
 
 
