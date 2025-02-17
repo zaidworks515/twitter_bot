@@ -290,7 +290,7 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
                     status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
                     print("STATUS CHECKED....")
                     
-                    if status != 'successful' or not status:
+                    if (status != 'successful' or not status) and (reply_count < 2):
                         
                         reply_text = get_gork_response(tweet_text, is_reply, reply_count, previous_reply)
                         
