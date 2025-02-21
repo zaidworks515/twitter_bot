@@ -4,6 +4,9 @@ from config import host, user, password, database
 
 
 def create_connection():
+    """
+    create connection to the database
+    """
     try:
         connection = mysql.connector.connect(
             host=host,
@@ -20,6 +23,19 @@ def create_connection():
     
     
 def insert_results(tagged_tweet_id=None, author_id=' ', tagged_tweet=None, replied_comments=None, post_status=None, conversation_id=None):   
+    """
+    inserts tweets and replies into database against their tweet ids.
+
+    Parameters
+    ----------
+    tagged_tweet_id : None
+    author_id : string
+    tagged_tweet : None
+    replied_comments : None
+    post_status : None
+    conversation_id : None
+    
+    """
     connection = create_connection()
     if connection:
         cursor = connection.cursor()
@@ -40,6 +56,26 @@ def insert_results(tagged_tweet_id=None, author_id=' ', tagged_tweet=None, repli
 
     
 def check_status(tagged_tweet_id, conversation_id, author_id):
+    """
+    check status of the tweets 
+
+    Parameters
+    ----------
+    tagged_tweet_id : Any
+    author_id : Any
+    conversation_id : Any
+
+    Returns
+    ----------
+    post_status
+        None, pending or successful
+    is_reply 
+        "True" or "False" (whether the tweet is a reply to another tweet)
+    reply_count
+        int (how many times we have already replied to the same person within the same conversation),
+    conversation_chain
+        [{"User": "", "AI_Response": ""}] (all the previous conversation with author)
+    """
     connection = create_connection()
     if connection:
         cursor = connection.cursor()
@@ -83,7 +119,18 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
 
 
 def check_tweets(tweet_category, from_date, to_date):
+    """
+    Fetches tweets of a specified category from the database within a given time frame.
 
+    Parameters
+    ----------
+    tweet_category : str
+        The category of tweets to filter (e.g., "sports", "crypto", "entertainment").
+    from_date : str
+        The start date for fetching tweets (format: YYYY-MM-DD).
+    to_date : str
+        The end date for fetching tweets (format: YYYY-MM-DD).
+    """
     connection = create_connection()
     if connection:
         cursor = connection.cursor()
@@ -111,6 +158,21 @@ def check_tweets(tweet_category, from_date, to_date):
 
  
 def insert_results_make_tweets(news_title=None, news_description=' ', generated_tweet=None, tweet_category=None, post_status=None):   
+    """
+    inserts results into make_tweets table
+
+    parameters
+    ----------
+    news_title : None, 
+    news_description : ' ', 
+    generated_tweet : None, 
+    tweet_category : None,
+    post_status : None
+
+    returns
+    ---------
+    tweet_id : int
+    """
     connection = create_connection()
     if connection:
         print('connection established')

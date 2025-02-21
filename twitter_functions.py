@@ -14,7 +14,21 @@ model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def post_tweet(tweet_category=None):
     """
-    Verify the existence of a similar tweet. If no similar tweet exists, post a new tweet.
+    Fetches a news article based on the given category, checks for similar recent tweets,  
+    and posts a new tweet if no similar one exists.
+
+    Parameters
+    ----------
+    tweet_category : str, optional
+        The category of news to fetch and tweet about. If None, no category filter is applied.
+
+    Returns
+    -------
+    dict
+        A dictionary containing details of the successfully posted tweet (e.g., tweet ID and text).
+    None
+        If no article is found, a similar tweet already exists, or an error occurs while posting.
+    
     """
     
     # print("========"*30)  
@@ -97,6 +111,29 @@ def bearer_oauth(r):
 
 
 def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, access_token, access_token_secret):
+    """
+    Posts a reply to a tweet using the Twitter API v2.
+
+    Parameters
+    ----------
+    tweet_id : str
+        The ID of the tweet to reply to.
+    comment_text : str
+        The text of the comment to be posted.
+    consumer_key : str
+        The Twitter API consumer key.
+    consumer_secret : str
+        The Twitter API consumer secret.
+    access_token : str
+        The access token for authentication.
+    access_token_secret : str
+        The access token secret for authentication.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the response from the Twitter API, including details of the posted comment.
+    """
     print(tweet_id, comment_text)
     comment_url = "https://api.twitter.com/2/tweets"
     
@@ -122,7 +159,23 @@ def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, acce
 
 
 def reply_tweet(username=None, start_time=None, end_time=None):
-    
+    """
+    Fetch tweets of a selected user and post replies on them if applicable.
+
+    Parameters
+    ----------
+    username : str, optional
+        Twitter handle of the user whose tweets need to be fetched.
+    start_time : str, optional
+        The start time (ISO format) for filtering tweets.
+    end_time : str, optional
+        The end time (ISO format) for filtering tweets.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the task status, number of tweets processed, and any errors encountered.
+    """
     user_url = f"https://api.twitter.com/2/users/by/username/{username}"
     
     user_response = requests.get(user_url, headers={"Authorization": f"Bearer {bearer_token}"})
@@ -207,7 +260,24 @@ def bearer_oauth2(r):
     
 
 def fetch_tagged_tweets(username, start_time=None, end_time=None):
+    """
+    Fetch tweets that mentioned the specified username.
 
+    Parameters
+    ----------
+    username : str
+        Twitter handle of the user whose mentions are to be fetched.
+    start_time : str, optional
+        Start time (ISO 8601 format) to filter tweets.
+    end_time : str, optional
+        End time (ISO 8601 format) to filter tweets.
+
+    Returns
+    -------
+    dict
+        A dictionary containing tweets if found, or an error message if something goes wrong.
+
+    """
     if not bearer_token:
         raise ValueError("Bearer token not found. Set the BEARER_TOKEN environment variable.")
 
@@ -253,6 +323,17 @@ def fetch_tagged_tweets(username, start_time=None, end_time=None):
 def get_username(author_id):
     """
     Retrieve the username from a given Twitter user ID.
+
+    Parameters
+    ----------
+    author_id : str
+        The Twitter user ID to look up.
+
+    Returns
+    -------
+    str or dict
+        Returns the username as a string if found, or an error dictionary if something goes wrong.
+
     """
     url = f"https://api.twitter.com/2/users/{author_id}"
     headers = {
@@ -271,6 +352,23 @@ def get_username(author_id):
 
 
 def reply_tagged_tweet(username, start_time=None, end_time=None):
+    """
+    Fetch tweets in which the specified user is mentioned and post replies if necessary.
+
+    Parameters
+    ----------
+    username : str
+        The Twitter username whose mentions will be fetched.
+    start_time : str, optional
+        The start time for fetching mentions in ISO 8601 format (e.g., '2024-02-15T00:00:00Z').
+    end_time : str, optional
+        The end time for fetching mentions in ISO 8601 format.
+
+    Returns
+    -------
+    dict or str
+        Returns the API response of the posted reply if successful, or a string message if no reply was posted.
+    """
     try:
 
         json_response = fetch_tagged_tweets(username, start_time, end_time)
@@ -330,7 +428,25 @@ permission_status = 'not allowed'
 
 
 def get_gork_response(tweet, is_reply, reply_count, previous_reply):
-    
+    """
+    Process a tweet and generate an reply using geok api.
+
+    Parameters
+    ----------
+    tweet : str
+        The content of the tweet that requires a response.
+    is_reply : bool
+        Indicates if the tweet is a reply to a previous conversation.
+    reply_count : int
+        The number of times the same user has been replied to within the conversation.
+    previous_reply : str
+        The previous conversation with the same user.
+
+    Returns
+    -------
+    str or None
+        Returns the AI-generated reply if the context is relevant and reply is permitted; otherwise, returns None.
+    """
     
     global iteration_count
     global permission_status
@@ -489,6 +605,20 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
 
 
 def get_news(query):
+    """
+    Fetch the latest news articles related to a given query using the GNews API.
+
+    Parameters
+    ----------
+    query : str
+        The search term for retrieving relevant news articles.
+
+    Returns
+    -------
+    list or None
+        A list containing the latest article(s) if found within the last 24 hours, otherwise None.
+
+    """
     url = f"https://gnews.io/api/v4/search?q={query.replace(' ', '%20')}&lang=en&country=us&max=1&apikey={news_api}"
 
     try:
@@ -525,6 +655,20 @@ permission_status2 = 'not allowed'
 
 
 def make_tweet_gork(news):
+    """
+    Generate a tweet based on the given news content using the Grok API.
+
+    Parameters
+    ----------
+    news : list
+        A list containing a dictionary with details of a news article, including 'title', 'description', and 'content'.
+
+    Returns
+    -------
+    str
+       Generated tweet.
+
+    """
     global iteration_count2
     global permission_status2
     
@@ -636,7 +780,29 @@ permission_status3 = 'not allowed'
 
 
 def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previous_reply):
-    
+    """
+    Generates a reply using the Grok API based on a given tweet.
+
+    This function processes tweets from selected accounts, determines whether a response 
+    should be generated, and crafts a reply based on predefined personality and language rules. 
+
+    Parameters
+    -----------
+    tweet : str
+        The content of the tweet that needs a reply.
+    is_reply : bool
+        Indicates whether the given tweet is a reply to another reply.
+    reply_count : int
+        The number of times the chatbot has already replied to the same user in a conversation thread.
+    previous_reply : str
+        The previous conversation history with the same user to maintain context.
+
+    Returns
+    --------
+    str or None:
+        - Returns the generated witty response if appropriate.
+        - Returns None if the tweet contains an Ethereum wallet address or if a response is not warranted.
+    """
     global iteration_count3
     global permission_status3
     

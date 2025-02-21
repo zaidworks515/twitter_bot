@@ -22,6 +22,19 @@ current_category_index = 0
 post_scheduler_lock = threading.Lock()
 
 def posting_tweet():
+    """
+    Posts a new tweet to the Game5Ball account based on a scheduled category.
+
+    This function retrieves a tweet from the `post_tweet` function using a predefined 
+    category list and posts it under a thread-safe lock to prevent concurrent execution.
+
+    Functionality:
+    --------------
+    - Acquires a lock (`post_scheduler_lock`) to ensure only one tweet is posted at a time.
+    - Fetches the current tweet category from the `categories` list using `current_category_index`.
+    - Calls `post_tweet` to generate and post a tweet.
+    - Updates `current_category_index` cyclically to move to the next category after each post.
+    """
     with post_scheduler_lock:
         global current_category_index
 
@@ -45,6 +58,22 @@ def posting_tweet():
 
 reply_scheduler_lock = threading.Lock()
 def tweet_reply_scheduler():
+    """
+    Schedules and posts replies to tweets that have tagged the Game5Ball account.
+
+    This function:
+    - Acquires a thread lock (`reply_scheduler_lock`) to ensure that only one instance runs at a time.
+    - Defines a time window (last 4 hours) to fetch tweets mentioning the `Game5Ball` account.
+    - Calls `reply_tagged_tweet` to retrieve and respond to tweets within the defined time window.
+    - Logs the process, including the start and end times, responses, and any errors.
+
+    Functionality:
+    --------------
+    - Defines a 4-hour time window to fetch recent mentions.
+    - Calls `reply_tagged_tweet(username, start_time, end_time)` to fetch tweets that tagged the account.
+    - If relevant tweets exist, logs the response; otherwise, it logs that no data was found.
+
+    """
     with reply_scheduler_lock:
         # netherlands_tz = pytz.timezone("Europe/Amsterdam")
 
@@ -71,6 +100,23 @@ def tweet_reply_scheduler():
  
 selected_reply_scheduler_lock = threading.Lock()
 def selected_reply_scheduler():
+    """
+    Replies to tweets from a predefined list of selected accounts.
+
+    This function:
+    - Acquires a thread lock (`selected_reply_scheduler_lock`) to ensure only one instance runs at a time.
+    - Defines a 13-hour time window to fetch tweets from selected accounts.
+    - Iterates through a predefined list of accounts and replies to their latest tweets.
+    - Introduces a delay of 1200 seconds (20 minutes) between replies to avoid spam-like behavior.
+    - Logs errors and continues processing the remaining accounts if an exception occurs.
+
+    Functionality:
+    --------------
+    - Defines a 13-hour time window for fetching tweets.
+    - Calls `reply_tweet(username, start_time, end_time)` for each account in `accounts_list`.
+    - Introduces a 20-minute delay between replies to prevent rate limiting.
+    - Uses exception handling to ensure failures in one account do not affect the rest.
+    """
     with selected_reply_scheduler_lock:
         accounts_list = ["ScottiePippen", "saylor", "elonmusk", "espn", "SportsCenter", 
                         "bleacherreport", "patrickbetdavid", "rovercrc", "RWAwatchlist_", 
