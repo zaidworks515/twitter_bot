@@ -36,14 +36,14 @@ def posting_tweet():
             tweet = post_tweet()
             if tweet:
                 logging.info("Tweet posted successfully!")
-                current_category_index = (current_category_index + 1) % len(categories)
+                print(tweet)
+                print("====" * 15)
+            
             else:
                 logging.info("No tweet was posted.")
-                current_category_index = (current_category_index + 1) % len(categories)
-
+                
 
         except Exception as e:
-            current_category_index = (current_category_index + 1) % len(categories)
             logging.error(f"Error in post_tweet: {e}", exc_info=True)
 
 
