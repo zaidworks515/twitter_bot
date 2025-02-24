@@ -15,10 +15,6 @@ CORS(app)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-categories = ['Artificial Intelligence', 'top sports news', 'Basketball', 'crypto', 'trending', 'tech']
-
-current_category_index = 0  
-
 post_scheduler_lock = threading.Lock()
 
 def posting_tweet():
@@ -36,13 +32,8 @@ def posting_tweet():
     - Updates `current_category_index` cyclically to move to the next category after each post.
     """
     with post_scheduler_lock:
-        global current_category_index
-
         try:
-            category = categories[current_category_index] 
-
-            logging.info(f"Posting tweet for category: {category}")
-            tweet = post_tweet(tweet_category=category)
+            tweet = post_tweet()
             if tweet:
                 logging.info("Tweet posted successfully!")
                 current_category_index = (current_category_index + 1) % len(categories)
@@ -118,10 +109,10 @@ def selected_reply_scheduler():
     - Uses exception handling to ensure failures in one account do not affect the rest.
     """
     with selected_reply_scheduler_lock:
-        accounts_list = ["ScottiePippen", "saylor", "elonmusk", "espn", "SportsCenter", 
+        accounts_list = ["ScottiePippen", "saylor", "espn", "SportsCenter", 
                         "bleacherreport", "patrickbetdavid", "rovercrc", "RWAwatchlist_", 
-                        "rawalerts", "AutismCapital", "MarioNawfal", "DailyLoud", "Cointelegraph", 
-                        "EricTrump", "RealAlexJones", "BallIsLife", "VitalikButerin", "Ashcryptoreal",
+                        "rawalerts", "AutismCapital", "DailyLoud", "Cointelegraph", 
+                        "EricTrump", "BallIsLife", "VitalikButerin", "Ashcryptoreal",
                         "cz_binance", "alx", "nba", "KDTrey5", "KingJames", "ESPNNBA", "stephenasmith", 
                         "barstoolsports", "binance", "coinmarketcap", "coinbase", "coingecko", "brian_armstrong",
                         "AltcoinDailyio", "WatcherGuru"
@@ -154,7 +145,7 @@ schedule.every(680).minutes.do(selected_reply_scheduler)
 
 schedule.every(15).minutes.do(tweet_reply_scheduler)
 
-schedule.every(240).minutes.do(posting_tweet) 
+schedule.every(1).minutes.do(posting_tweet) 
 
 
 

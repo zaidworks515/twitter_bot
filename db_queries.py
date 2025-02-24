@@ -156,6 +156,38 @@ def check_tweets(tweet_category, from_date, to_date):
     else:
         return "Unable to connect to the database"
 
+def check_last_tweet_category():
+    """
+    Fetches last tweet category.
+    return:
+    category name
+    """
+    connection = create_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            query = """
+                SELECT * FROM make_tweets ORDER BY id DESC LIMIT 1 
+            """
+            cursor.execute(query,)
+            
+            results = cursor.fetchone()
+            
+            if results:
+                tweet_category = results[-3]
+                    
+                return tweet_category
+            else:
+                return None
+        
+        except Exception as e:
+            return f"An error occurred: {e}"
+        finally:
+            cursor.close()
+            connection.close()
+    else:
+        return "Unable to connect to the database"
+
  
 def insert_results_make_tweets(news_title=None, news_description=' ', generated_tweet=None, tweet_category=None, post_status=None):   
     """

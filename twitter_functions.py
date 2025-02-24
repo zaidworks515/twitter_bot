@@ -4,7 +4,7 @@ import tweepy
 from requests_oauthlib import OAuth1
 from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key, news_api
 import requests
-from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets
+from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets, check_last_tweet_category
 from slang_picker import SlangPicker
 import re
 from sentence_transformers import SentenceTransformer, util
@@ -12,7 +12,7 @@ from sentence_transformers import SentenceTransformer, util
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-def post_tweet(tweet_category=None):
+def post_tweet():
     """
     Fetches a news article based on the given category, checks for similar recent tweets,  
     and posts a new tweet if no similar one exists.
@@ -31,13 +31,16 @@ def post_tweet(tweet_category=None):
     
     """
     
-    # print("========"*30)  
-    # print(tweet_category)
-    # print("========"*30) 
 
     post = False
+    
 
-    article = get_news(query=tweet_category)
+    last_tweet_category = check_last_tweet_category()
+    
+    data = get_news(last_category=last_tweet_category)
+    
+    article = data[0]
+    article_category = data[1]
 
     if not article:
         print("No articles found for the given category.")
@@ -47,7 +50,7 @@ def post_tweet(tweet_category=None):
     to_date = today.strftime('%Y-%m-%d')
     from_date = (today - timedelta(days=1)).strftime('%Y-%m-%d')
 
-    tweets = check_tweets(tweet_category, from_date, to_date)
+    tweets = check_tweets(last_tweet_category, from_date, to_date)
 
     fetched_title = article[0]['title']
     fetched_description = article[0]['description']
@@ -88,7 +91,7 @@ def post_tweet(tweet_category=None):
                     news_title=fetched_title,
                     news_description=fetched_description,
                     generated_tweet=generated_tweet,
-                    tweet_category=tweet_category,
+                    tweet_category=article_category,
                     post_status='successful'
                 )
                 print(f"Tweet posted successfully: {response.data}")
@@ -604,50 +607,66 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
         print(f"An error occurred: {e}")
 
 
-def get_news(query):
+
+def get_news(last_category):
     """
-    Fetch the latest news articles related to a given query using the GNews API.
+    Fetches a news article based on the given category.  
 
     Parameters
     ----------
-    query : str
-        The search term for retrieving relevant news articles.
+    last_category : str, required
+        The category of news which was last available.
 
     Returns
     -------
-    list or None
-        A list containing the latest article(s) if found within the last 24 hours, otherwise None.
-
+    news article data, used category.
+    None
+        If no latest article is found.
+    
     """
-    url = f"https://gnews.io/api/v4/search?q={query.replace(' ', '%20')}&lang=en&country=us&max=1&apikey={news_api}"
+    
+    categories = ['Artificial Intelligence', 'AI', 'top sports news', 'Basketball', 'crypto', 'cryptocurrency', 'trending', 'tech', 'technology']
+    max_attempts = len(categories)
 
-    try:
-        response = requests.get(url)
+
+    last_index = next(i for i, cat in enumerate(categories) if cat == last_category)
+    if last_index != (max_attempts - 1):
+        index = last_index + 1
+    else:
+        index = 0
         
-        if response.status_code == 200:
-            data = response.json()
-            articles = data.get("articles", [])
 
-            if articles:
-                published_at = articles[0]['publishedAt']
-                article_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ')
+    for _ in range(max_attempts):
+        query = categories[index]
+        print(f"FETCHING NEWS FOR:: {query}")
+        url = f"https://gnews.io/api/v4/search?q={query.replace(' ', '%20')}&lang=en&country=us&max=1&apikey={news_api}"
 
-                today = datetime.utcnow()
-                yesterday = today - timedelta(days=1)
+        try:
+            response = requests.get(url)
 
-                if article_date >= yesterday:
-                    return articles
-                else:
-                    raise ValueError(f"Article is too old. Published on {article_date.strftime('%Y-%m-%d')}")
+            if response.status_code == 200:
+                data = response.json()
+                articles = data.get("articles", [])
 
-        else:
-            print(f"Error: Unable to fetch news (Status code: {response.status_code})")
+                if articles:
+                    published_at = articles[0]['publishedAt']
+                    article_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ')
+
+                    today = datetime.now()
+                    yesterday = today - timedelta(days=1)
+
+                    if article_date >= yesterday:
+                        return articles, query  
+
+            index = (index + 1) % len(categories)
+
+        except requests.exceptions.RequestException as e:
+            print(f"RequestException: {e}")
             return None
 
-    except requests.exceptions.RequestException as e:
-        print(f"RequestException: {e}")
-    except ValueError as ve:
-        print(ve)
+    print("No recent articles found in any category.")
+    return None
+
 
 
 iteration_count2 = 0 
@@ -884,7 +903,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
         - Reply Structure:
             {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
         
-        - Keep interactions consice, classy, and memorable—ensuring that *Game 5 Ball’s legacy* is highlighted as an iconic and central theme in your humor.
+        - Keep interactions concise, classy, and memorable—ensuring that *Game 5 Ball’s legacy* is highlighted as an iconic and central theme in your humor.
 
     """)
 
