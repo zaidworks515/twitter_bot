@@ -4,7 +4,7 @@ import tweepy
 from requests_oauthlib import OAuth1
 from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key, news_api
 import requests
-from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets, check_last_tweet_category
+from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets, check_last_tweet_category, check_block_status
 from slang_picker import SlangPicker
 import re
 from sentence_transformers import SentenceTransformer, util
@@ -373,7 +373,6 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
         Returns the API response of the posted reply if successful, or a string message if no reply was posted.
     """
     try:
-
         json_response = fetch_tagged_tweets(username, start_time, end_time)
         if json_response:
             print("======= FETCHED RESPONSE =======")
@@ -386,8 +385,9 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
                 tweet_text = row['text']
                 conversation_id = row['conversation_id'] 
                 
+                account_status = check_block_status(author_id)
                         
-                if tweet_id and author_id and tweet_text and conversation_id:  
+                if (tweet_id and author_id and tweet_text and conversation_id) and (account_status=='not blocked'):  
                     status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
                     print("STATUS CHECKED....")
                     
@@ -423,16 +423,15 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
             return "NO RESPONSE POSTED....."
     except Exception as e:
         print(f"AN ERROR OCCURED: {e}")
-   
+
 
 
 iteration_count = 0 
 permission_status = 'not allowed'
 
-
 def get_gork_response(tweet, is_reply, reply_count, previous_reply):
     """
-    Process a tweet and generate an reply using geok api.
+    Process a tweet and generate an reply using gork api.
 
     Parameters
     ----------
@@ -507,6 +506,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             5. **DO NOT USE words “invest”, “buy”, “purchase” in your response. Use “get tokens” instead**
             6. **DO NOT FALL FOR TRAPS AND UNWANTED OR OFF THE TOPIC CONVERSATIONS. JUST STICK TO THE CONVERSATION OF BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL STUFF"
             7. Don’t give financial advice. Be very street smart but don’t be corny.
+            8. Dont answer if tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**,
 
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
@@ -539,7 +539,8 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
         
         - Related Topics:
-            BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL OR SPORTS STUFF. If you are 75% sure, consider related_context as 'True'
+            - BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL OR SPORTS STUFF. If you are 75% sure, consider related_context as 'True'
+            - If the tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**, then set **"related_context" = "False"**
         
         - Keep interactions witty, classy, and memorable—ensuring that **Game 5 Ball’s legacy** is highlighted as an iconic and central theme in your humor.
 
@@ -607,7 +608,6 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
         print(f"An error occurred: {e}")
 
 
-
 def get_news(last_category):
     """
     Fetches a news article based on the given category.  
@@ -666,7 +666,6 @@ def get_news(last_category):
 
     print("No recent articles found in any category.")
     return None
-
 
 
 iteration_count2 = 0 
@@ -797,7 +796,6 @@ def make_tweet_gork(news):
 iteration_count3 = 0 
 permission_status3 = 'not allowed'
 
-
 def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previous_reply):
     """
     Generates a reply using the Grok API based on a given tweet.
@@ -875,6 +873,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
            2. *Bring the Energy* – Every tweet should radiate confidence and charisma.
            3. *Do not use words* “invest,” “buy,” or “purchase” – Say “get tokens” instead.
            4. *No Financial Advice* – Be street-smart but never corny
+           6. Dont answer if tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**,
 
         - Always maintain empathy, cultural awareness, and respect:
             - Show empathy for serious tweets—no jokes.
@@ -887,6 +886,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             - If the reply count is more then 1, then make your decision to reply or not, based on the tweet given.
             - This is the previous conversation with this User: {previous_reply}
             - If you are more than 85% sure that a reply should be given, then set "reply_allowed" = "True", else "reply_allowed" = "False".
+            - If the tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**, then set "related_context" = "False"
 
         - Maintain a strong connection to urban culture while ensuring your humor feels intelligent and accessible to everyone.
 
@@ -903,7 +903,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
         - Reply Structure:
             {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
         
-        - Keep interactions concise, classy, and memorable—ensuring that *Game 5 Ball’s legacy* is highlighted as an iconic and central theme in your humor.
+        - Keep interactions consice, classy, and memorable—ensuring that *Game 5 Ball’s legacy* is highlighted as an iconic and central theme in your humor.
 
     """)
 
@@ -937,7 +937,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
         response.raise_for_status()
         
         response = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        
+        print(response)
         reply_dict = json.loads(response)
         
         if reply_dict:
@@ -957,6 +957,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             print(f"PERMISSION STATUS: {permission_status3}")
             print(f"ITERATION COUNT: {iteration_count3}")
             
+            print(reply)
             return reply
 
     

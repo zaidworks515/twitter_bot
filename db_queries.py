@@ -9,10 +9,7 @@ def create_connection():
     """
     try:
         connection = mysql.connector.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database
+            host=host, user=user, password=password, database=database
         )
         # if connection.is_connected():
         #     print("Connected to MySQL database")
@@ -20,9 +17,40 @@ def create_connection():
     except Error as e:
         print(f"Error: {e}")
         return None
-    
-    
-def insert_results(tagged_tweet_id=None, author_id=' ', tagged_tweet=None, replied_comments=None, post_status=None, conversation_id=None):   
+
+
+def check_block_status(author_id):
+
+    connection = create_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            cursor.execute("SELECT * FROM accounts WHERE author_id = %s", (author_id,))
+
+            results = cursor.fetchone()
+            if results:
+                status = results[-1]
+
+                return status
+            else:
+                return "not blocked"
+        except Error as e:
+            return f"An error occurred: {e}"
+        finally:
+            cursor.close()
+            connection.close()
+    else:
+        return "Unable to connect to the database"
+
+
+def insert_results(
+    tagged_tweet_id=None,
+    author_id=" ",
+    tagged_tweet=None,
+    replied_comments=None,
+    post_status=None,
+    conversation_id=None,
+):
     """
     inserts tweets and replies into database against their tweet ids.
 
@@ -34,17 +62,29 @@ def insert_results(tagged_tweet_id=None, author_id=' ', tagged_tweet=None, repli
     replied_comments : None
     post_status : None
     conversation_id : None
-    
+
     """
     connection = create_connection()
     if connection:
         cursor = connection.cursor()
-        try:    
+        try:
             insert_query = """INSERT INTO tweet_record (tagged_tweet_id, author_id, tagged_tweet, replied_comments, post_status, conversation_id) 
             VALUES (%s, %s, %s, %s, %s, %s)"""
-            cursor.execute(insert_query, (tagged_tweet_id, author_id, tagged_tweet, replied_comments, post_status, conversation_id))
+            cursor.execute(
+                insert_query,
+                (
+                    tagged_tweet_id,
+                    author_id,
+                    tagged_tweet,
+                    replied_comments,
+                    post_status,
+                    conversation_id,
+                ),
+            )
             connection.commit()
-            return cursor.lastrowid or 'can not save posted a tweet.' # Yeh created id return krega
+            return (
+                cursor.lastrowid or "can not save posted a tweet."
+            )  # Yeh created id return krega
         except Error as e:
             connection.rollback()
             return f"An error occurred: {e}"
@@ -54,10 +94,10 @@ def insert_results(tagged_tweet_id=None, author_id=' ', tagged_tweet=None, repli
     else:
         return "Unable to connect to the database"
 
-    
+
 def check_status(tagged_tweet_id, conversation_id, author_id):
     """
-    check status of the tweets 
+    check status of the tweets
 
     Parameters
     ----------
@@ -69,7 +109,7 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
     ----------
     post_status
         None, pending or successful
-    is_reply 
+    is_reply
         "True" or "False" (whether the tweet is a reply to another tweet)
     reply_count
         int (how many times we have already replied to the same person within the same conversation),
@@ -80,26 +120,38 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
     if connection:
         cursor = connection.cursor()
         try:
-            cursor.execute("SELECT * FROM tweet_record WHERE tagged_tweet_id = %s", (tagged_tweet_id,))
+            cursor.execute(
+                "SELECT * FROM tweet_record WHERE tagged_tweet_id = %s",
+                (tagged_tweet_id,),
+            )
 
             results = cursor.fetchall()
-            cursor.execute("SELECT COUNT(*) FROM tweet_record WHERE conversation_id = %s AND author_id = %s", (conversation_id, author_id,))
+            cursor.execute(
+                "SELECT COUNT(*) FROM tweet_record WHERE conversation_id = %s AND author_id = %s",
+                (
+                    conversation_id,
+                    author_id,
+                ),
+            )
 
             reply_result = cursor.fetchone()
 
             reply_count = reply_result[0]
-            
 
             is_reply = "True" if reply_result[0] > 0 else "False"
-            
 
             conversation_chain = []
             if is_reply == "True":
-                cursor.execute("SELECT author_id, tagged_tweet, replied_comments FROM tweet_record WHERE conversation_id = %s AND author_id = %s ORDER BY id ASC", (conversation_id, author_id))
+                cursor.execute(
+                    "SELECT author_id, tagged_tweet, replied_comments FROM tweet_record WHERE conversation_id = %s AND author_id = %s ORDER BY id ASC",
+                    (conversation_id, author_id),
+                )
                 all_replies = cursor.fetchall()
-                
+
                 for reply in all_replies:
-                    conversation_chain.append({"User": reply[1], "AI_Response": reply[2]})
+                    conversation_chain.append(
+                        {"User": reply[1], "AI_Response": reply[2]}
+                    )
 
                 # print(f"CONVERSAION CHAIN: {conversation_chain}")
 
@@ -108,9 +160,9 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
                 return post_status, is_reply, reply_count, conversation_chain
             else:
                 return None, is_reply, reply_count, conversation_chain
-            
+
         except Error as e:
-            return f"An error occurred: {e}"  
+            return f"An error occurred: {e}"
         finally:
             cursor.close()
             connection.close()
@@ -140,14 +192,14 @@ def check_tweets(tweet_category, from_date, to_date):
                 WHERE tweet_category = %s AND DATE(created_at) BETWEEN %s AND %s
             """
             cursor.execute(query, (tweet_category, from_date, to_date))
-            
+
             results = cursor.fetchall()
-            
+
             if results:
                 return results
             else:
                 return None
-        
+
         except Exception as e:
             return f"An error occurred: {e}"
         finally:
@@ -155,6 +207,7 @@ def check_tweets(tweet_category, from_date, to_date):
             connection.close()
     else:
         return "Unable to connect to the database"
+
 
 def check_last_tweet_category():
     """
@@ -169,17 +222,19 @@ def check_last_tweet_category():
             query = """
                 SELECT * FROM make_tweets ORDER BY id DESC LIMIT 1 
             """
-            cursor.execute(query,)
-            
+            cursor.execute(
+                query,
+            )
+
             results = cursor.fetchone()
-            
+
             if results:
                 tweet_category = results[-3]
-                    
+
                 return tweet_category
             else:
                 return None
-        
+
         except Exception as e:
             return f"An error occurred: {e}"
         finally:
@@ -188,16 +243,22 @@ def check_last_tweet_category():
     else:
         return "Unable to connect to the database"
 
- 
-def insert_results_make_tweets(news_title=None, news_description=' ', generated_tweet=None, tweet_category=None, post_status=None):   
+
+def insert_results_make_tweets(
+    news_title=None,
+    news_description=" ",
+    generated_tweet=None,
+    tweet_category=None,
+    post_status=None,
+):
     """
     inserts results into make_tweets table
 
     parameters
     ----------
-    news_title : None, 
-    news_description : ' ', 
-    generated_tweet : None, 
+    news_title : None,
+    news_description : ' ',
+    generated_tweet : None,
     tweet_category : None,
     post_status : None
 
@@ -207,15 +268,26 @@ def insert_results_make_tweets(news_title=None, news_description=' ', generated_
     """
     connection = create_connection()
     if connection:
-        print('connection established')
+        print("connection established")
         cursor = connection.cursor()
-        try:    
+        try:
             insert_query = """INSERT INTO make_tweets (news_title, news_description, generated_tweet, tweet_category, post_status) 
             VALUES (%s, %s, %s, %s, %s)"""
-            cursor.execute(insert_query, (news_title, news_description, generated_tweet , tweet_category, post_status))
+            cursor.execute(
+                insert_query,
+                (
+                    news_title,
+                    news_description,
+                    generated_tweet,
+                    tweet_category,
+                    post_status,
+                ),
+            )
             connection.commit()
-            print('data inserted in db')
-            return cursor.lastrowid or 'can not posted a tweet.' # Yeh created id return krega
+            print("data inserted in db")
+            return (
+                cursor.lastrowid or "can not posted a tweet."
+            )  # Yeh created id return krega
         except Error as e:
             connection.rollback()
             return f"An error occurred: {e}"
@@ -224,4 +296,3 @@ def insert_results_make_tweets(news_title=None, news_description=' ', generated_
             connection.close()
     else:
         return "Unable to connect to the database"
-
