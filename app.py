@@ -35,8 +35,7 @@ def posting_tweet():
         try:
             tweet = post_tweet()
             if tweet:
-                logging.info("Tweet posted successfully!")
-                print(tweet)
+                logging.info("Tweet posted ")
                 print("====" * 15)
             
             else:
@@ -145,7 +144,7 @@ schedule.every(680).minutes.do(selected_reply_scheduler)
 
 schedule.every(15).minutes.do(tweet_reply_scheduler)
 
-schedule.every(1).minutes.do(posting_tweet) 
+schedule.every(240).minutes.do(posting_tweet) 
 
 
 
