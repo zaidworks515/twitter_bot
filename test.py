@@ -1,5 +1,17 @@
-from db_queries import check_status
+from twitter_functions import reply_tweet
+from datetime import datetime, timedelta
+import pytz
 
 
+netherlands_tz = pytz.timezone("Europe/Amsterdam")
 
-check_status(tagged_tweet_id='1879853519077052588', conversation_id='1877331038600339635', author_id='1877331038600339635')
+
+now = datetime.now(netherlands_tz)  
+
+end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+interval = now - timedelta(hours=13)
+start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+reply_tweet(username='ESPNNBA', start_time=start_time, end_time=end_time, max_tweet=5)
