@@ -161,7 +161,7 @@ def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, acce
     return comment_data
 
 
-def reply_tweet(username=None, start_time=None, end_time=None):
+def reply_tweet(username=None, start_time=None, end_time=None, max_tweet=None):
     """
     Fetch tweets of a selected user and post replies on them if applicable.
 
@@ -193,11 +193,22 @@ def reply_tweet(username=None, start_time=None, end_time=None):
 
     tweets_url = f"https://api.twitter.com/2/users/{user_id}/tweets"
 
-    params = {
-        "tweet.fields": "created_at,author_id,conversation_id",
-        "start_time": start_time,
-        "end_time": end_time
-    }
+    params = {}
+    if max_tweet:  # this will be used in selected accounts reply to main tweets....
+        params = {
+            "tweet.fields": "created_at,author_id,conversation_id",
+            "start_time": start_time,
+            "end_time": end_time,
+            "max_results": max_tweet,
+            "exclude": "replies"
+        }
+    else:
+        params = {
+            "tweet.fields": "created_at,author_id,conversation_id",
+            "start_time": start_time,
+            "end_time": end_time
+        }
+        
 
     response = requests.get(tweets_url, headers={"Authorization": f"Bearer {bearer_token}"}, params=params)
     
@@ -210,6 +221,7 @@ def reply_tweet(username=None, start_time=None, end_time=None):
     if "data" not in json_response or len(json_response["data"]) == 0:
         print(f"No tweets found for {username} in the given timeframe.")
         return None
+    
     
     for row in json_response['data']:
         author_id = row['author_id']
@@ -249,7 +261,10 @@ def reply_tweet(username=None, start_time=None, end_time=None):
                                             replied_comments=comment_text,
                                             conversation_id=conversation_id,
                                             post_status='successful')
-                        
+        
+        if max_tweet:
+            break  # to reply only the one tweet of main page (SELECTED ACCOUNTS....).
+        
     return "Task Successful"
     
     

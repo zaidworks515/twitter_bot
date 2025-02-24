@@ -117,18 +117,19 @@ def selected_reply_scheduler():
                         "AltcoinDailyio", "WatcherGuru"
                         ]
         
-        now = datetime.now()  
-
-        end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        interval = now - timedelta(hours=13)
-        start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
         for username in accounts_list:
+            now = datetime.now()  
+
+            end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+            interval = now - timedelta(hours=13)
+            start_time = interval.strftime('%Y-%m-%dT%H:%M:%SZ')
+            
             try:
                 print(f"Processing {username}...")
-                reply_tweet(username, start_time=start_time, end_time=end_time)
+                reply_tweet(username, start_time=start_time, end_time=end_time, max_tweet=5)
                 time.sleep(1200)  
                 
             except Exception as e:
