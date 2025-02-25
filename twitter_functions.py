@@ -38,9 +38,11 @@ def post_tweet():
     last_tweet_category = check_last_tweet_category()
     
     data = get_news(last_category=last_tweet_category)
-    
-    article = data[0]
-    article_category = data[1]
+    article = None
+
+    if data:
+        article = data[0]
+        article_category = data[1]
 
     if not article:
         print("No articles found for the given category.")
