@@ -226,7 +226,7 @@ def reply_tweet(username=None, start_time=None, end_time=None, max_tweet=None):
     
     comment_data = None
     id = None
-    for row in json_response['data']:
+    for row in reversed(json_response['data']):  # To fetch the data in ascending order and make a proper conversation chain.. VAR = (PREVIOUS_REPLY)
         author_id = row['author_id']
         tweet_id = row['id']
         tweet_text = row['text']
@@ -400,7 +400,7 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
             print(json_response)
             comment_data = None
             
-            for row in json_response['data']:
+            for row in reversed(json_response['data']):
                 author_id = row['author_id']
                 tweet_id = row['id']
                 tweet_text = row['text']
