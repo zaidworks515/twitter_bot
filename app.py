@@ -141,19 +141,22 @@ def selected_reply_scheduler():
 
 
 
-schedule.every(680).minutes.do(selected_reply_scheduler)
+def run_scheduler():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+        
+        
+def run_selected_reply_scheduler():
+    thread = threading.Thread(target=selected_reply_scheduler)
+    thread.start()
+
 
 schedule.every(15).minutes.do(tweet_reply_scheduler)
 
 schedule.every(240).minutes.do(posting_tweet) 
 
-
-
-def run_scheduler():
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-      
+schedule.every(680).minutes.do(run_selected_reply_scheduler)
 
 if __name__ == "__main__":
     try:
