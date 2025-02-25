@@ -222,7 +222,8 @@ def reply_tweet(username=None, start_time=None, end_time=None, max_tweet=None):
         print(f"No tweets found for {username} in the given timeframe.")
         return None
     
-    
+    comment_data = None
+    id = None
     for row in json_response['data']:
         author_id = row['author_id']
         tweet_id = row['id']
@@ -265,8 +266,11 @@ def reply_tweet(username=None, start_time=None, end_time=None, max_tweet=None):
         if max_tweet:
             break  # to reply only the one tweet of main page (SELECTED ACCOUNTS....).
         
-    return "Task Successful"
-    
+    if id:
+        return "Task Successful"
+    else:
+        return None
+        
     
 def bearer_oauth2(r):
     """

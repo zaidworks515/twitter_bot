@@ -129,8 +129,12 @@ def selected_reply_scheduler():
             
             try:
                 print(f"Processing {username}...")
-                reply_tweet(username, start_time=start_time, end_time=end_time, max_tweet=5)
-                time.sleep(1200)  
+                status = reply_tweet(username, start_time=start_time, end_time=end_time, max_tweet=5)
+                
+                if status:
+                    time.sleep(1200)
+                else:
+                    continue  
                 
             except Exception as e:
                 print(f"Error while replying to {username}: {e}")
