@@ -283,6 +283,24 @@ def bearer_oauth2(r):
     return r
     
 
+def fetch_main_tweet(conversation_id):
+    try:
+        tweet_url = f"https://api.twitter.com/2/tweets/{conversation_id}"
+        params = {"tweet.fields": "created_at,author_id,text"}
+        headers = {"Authorization": f"Bearer {bearer_token}", "User-Agent": "v2TweetLookupPython"}
+
+        response = requests.get(tweet_url, headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception(f"Error fetching main tweet: {response.status_code} {response.text}")
+
+        main_tweet = response.json()
+        return main_tweet
+
+    except Exception as e:
+        print(f"Error fetching main tweet: {e}")
+        return None
+
+
 def fetch_tagged_tweets(username, start_time=None, end_time=None):
     """
     Fetch tweets that mentioned the specified username.
@@ -399,6 +417,7 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
             print("======= FETCHED RESPONSE =======")
             print(json_response)
             comment_data = None
+            main_tweet = None
             
             for row in reversed(json_response['data']):
                 author_id = row['author_id']
@@ -411,6 +430,17 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
                 if (tweet_id and author_id and tweet_text and conversation_id) and (account_status=='not blocked'):  
                     status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
                     print("STATUS CHECKED....")
+                    try:
+                        main_tweet = fetch_main_tweet(conversation_id)
+                    except:
+                        continue
+
+                    if main_tweet:
+                        main_tweet_text = main_tweet.get("data", {}).get("text", "")
+                        main_tweet = {"main_tweet": main_tweet_text}
+                        
+                        previous_reply.append(main_tweet)
+                        print(previous_reply)
                     
                     if (status != 'successful' or not status) and (reply_count < 2):
                         
@@ -539,6 +569,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             - is_reply = {is_reply}, and the same person is already being replied to {reply_count} times.
             - If the reply count is more then 1, then make your decision to reply or not, based on the tweet given.
             - This is the previous conversation with this User: {previous_reply}
+            - The previous conversation list contains main tweet and all the previous replies given to the user, if there are no previous reply, then the list will have only main tweet.
             - If you are more than 85% sure that a reply should be given, then set "reply_allowed" = "True", else "reply_allowed" = "False".
 
             
@@ -914,6 +945,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             - is_reply = {is_reply}, and the same person is already being replied to {reply_count} times.
             - If the reply count is more then 1, then make your decision to reply or not, based on the tweet given.
             - This is the previous conversation with this User: {previous_reply}
+            - The previous conversation list contains main tweet and all the previous replies given to the user, if there are no previous replies, then the list will only have main tweet.
             - If you are more than 85% sure that a reply should be given, then set "reply_allowed" = "True", else "reply_allowed" = "False".
             - If the tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**, then set "related_context" = "False"
 
