@@ -646,7 +646,15 @@ def get_news(last_category):
     
     """
     
-    categories = ['Artificial Intelligence', 'AI', 'top sports news', 'Basketball', 'crypto', 'cryptocurrency', 'trending', 'tech', 'technology']
+    categories = [
+    'Artificial Intelligence', 'AI', 'Automation',
+    'top sports news', 'Sports Updates', 'Latest Sports', 'Sports Headlines',
+    'Basketball', 'NBA', 'Hoops', 'Basketball News',
+    'crypto', 'cryptocurrency', 'blockchain', 'digital currency', 'crypto trading', 'crypto market', 
+    'trending', 'viral', 'breaking news', 'latest news',
+    'tech', 'technology', 'innovation', 'tech trends', 'AI advancements', 'software', 'IT news'
+    ]
+    
     max_attempts = len(categories)
 
 
