@@ -429,21 +429,20 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
                         
                 if (tweet_id and author_id and tweet_text and conversation_id) and (account_status=='not blocked'):  
                     status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
-                    print("STATUS CHECKED....")
-                    try:
-                        main_tweet = fetch_main_tweet(conversation_id)
-                    except:
-                        continue
-
-                    if main_tweet:
-                        main_tweet_text = main_tweet.get("data", {}).get("text", "")
-                        main_tweet = {"main_tweet": main_tweet_text}
-                        
-                        previous_reply.append(main_tweet)
-                        print(previous_reply) 
-                    
+                    print("STATUS CHECKED....")                    
                     if (status != 'successful' or not status) and (reply_count < 2):
+                        try:
+                            main_tweet = fetch_main_tweet(conversation_id)
+                        except:
+                            continue
                         
+                        if main_tweet:
+                            main_tweet_text = main_tweet.get("data", {}).get("text", "")
+                            main_tweet = {"main_tweet": main_tweet_text}
+                            
+                            previous_reply.append(main_tweet)
+                            print(previous_reply) 
+
                         reply_text = get_gork_response(tweet_text, is_reply, reply_count, previous_reply)
                         
                         if reply_text:            
