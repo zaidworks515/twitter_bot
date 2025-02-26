@@ -4,7 +4,7 @@ import tweepy
 from requests_oauthlib import OAuth1
 from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key, news_api
 import requests
-from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets
+from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets, check_last_tweet_category, check_block_status
 from slang_picker import SlangPicker
 import re
 from sentence_transformers import SentenceTransformer, util
@@ -12,7 +12,7 @@ from sentence_transformers import SentenceTransformer, util
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-def post_tweet(tweet_category=None):
+def post_tweet():
     """
     Fetches a news article based on the given category, checks for similar recent tweets,  
     and posts a new tweet if no similar one exists.
@@ -31,13 +31,18 @@ def post_tweet(tweet_category=None):
     
     """
     
-    # print("========"*30)  
-    # print(tweet_category)
-    # print("========"*30) 
 
     post = False
+    
 
-    article = get_news(query=tweet_category)
+    last_tweet_category = check_last_tweet_category()
+    
+    data = get_news(last_category=last_tweet_category)
+    article = None
+
+    if data:
+        article = data[0]
+        article_category = data[1]
 
     if not article:
         print("No articles found for the given category.")
@@ -47,7 +52,7 @@ def post_tweet(tweet_category=None):
     to_date = today.strftime('%Y-%m-%d')
     from_date = (today - timedelta(days=1)).strftime('%Y-%m-%d')
 
-    tweets = check_tweets(tweet_category, from_date, to_date)
+    tweets = check_tweets(last_tweet_category, from_date, to_date)
 
     fetched_title = article[0]['title']
     fetched_description = article[0]['description']
@@ -88,7 +93,7 @@ def post_tweet(tweet_category=None):
                     news_title=fetched_title,
                     news_description=fetched_description,
                     generated_tweet=generated_tweet,
-                    tweet_category=tweet_category,
+                    tweet_category=article_category,
                     post_status='successful'
                 )
                 print(f"Tweet posted successfully: {response.data}")
@@ -158,7 +163,7 @@ def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, acce
     return comment_data
 
 
-def reply_tweet(username=None, start_time=None, end_time=None):
+def reply_tweet(username=None, start_time=None, end_time=None, max_tweet=None):
     """
     Fetch tweets of a selected user and post replies on them if applicable.
 
@@ -190,11 +195,22 @@ def reply_tweet(username=None, start_time=None, end_time=None):
 
     tweets_url = f"https://api.twitter.com/2/users/{user_id}/tweets"
 
-    params = {
-        "tweet.fields": "created_at,author_id,conversation_id",
-        "start_time": start_time,
-        "end_time": end_time
-    }
+    params = {}
+    if max_tweet:  # this will be used in selected accounts reply to main tweets....
+        params = {
+            "tweet.fields": "created_at,author_id,conversation_id",
+            "start_time": start_time,
+            "end_time": end_time,
+            "max_results": max_tweet,
+            "exclude": "replies"
+        }
+    else:
+        params = {
+            "tweet.fields": "created_at,author_id,conversation_id",
+            "start_time": start_time,
+            "end_time": end_time
+        }
+        
 
     response = requests.get(tweets_url, headers={"Authorization": f"Bearer {bearer_token}"}, params=params)
     
@@ -208,7 +224,9 @@ def reply_tweet(username=None, start_time=None, end_time=None):
         print(f"No tweets found for {username} in the given timeframe.")
         return None
     
-    for row in json_response['data']:
+    comment_data = None
+    id = None
+    for row in reversed(json_response['data']):  # To fetch the data in ascending order and make a proper conversation chain.. VAR = (PREVIOUS_REPLY)
         author_id = row['author_id']
         tweet_id = row['id']
         tweet_text = row['text']
@@ -246,9 +264,15 @@ def reply_tweet(username=None, start_time=None, end_time=None):
                                             replied_comments=comment_text,
                                             conversation_id=conversation_id,
                                             post_status='successful')
-                        
-    return "Task Successful"
-    
+        
+        if max_tweet:
+            break  # to reply only the one tweet of main page (SELECTED ACCOUNTS....).
+        
+    if id:
+        return "Task Successful"
+    else:
+        return None
+        
     
 def bearer_oauth2(r):
     """
@@ -258,6 +282,24 @@ def bearer_oauth2(r):
     r.headers["User-Agent"] = "v2UserMentionsPython"
     return r
     
+
+def fetch_main_tweet(conversation_id):
+    try:
+        tweet_url = f"https://api.twitter.com/2/tweets/{conversation_id}"
+        params = {"tweet.fields": "created_at,author_id,text"}
+        headers = {"Authorization": f"Bearer {bearer_token}", "User-Agent": "v2TweetLookupPython"}
+
+        response = requests.get(tweet_url, headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception(f"Error fetching main tweet: {response.status_code} {response.text}")
+
+        main_tweet = response.json()
+        return main_tweet
+
+    except Exception as e:
+        print(f"Error fetching main tweet: {e}")
+        return None
+
 
 def fetch_tagged_tweets(username, start_time=None, end_time=None):
     """
@@ -370,23 +412,35 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
         Returns the API response of the posted reply if successful, or a string message if no reply was posted.
     """
     try:
-
         json_response = fetch_tagged_tweets(username, start_time, end_time)
         if json_response:
             print("======= FETCHED RESPONSE =======")
             print(json_response)
             comment_data = None
+            main_tweet = None
             
-            for row in json_response['data']:
+            for row in reversed(json_response['data']):
                 author_id = row['author_id']
                 tweet_id = row['id']
                 tweet_text = row['text']
                 conversation_id = row['conversation_id'] 
                 
+                account_status = check_block_status(author_id)
                         
-                if tweet_id and author_id and tweet_text and conversation_id:  
+                if (tweet_id and author_id and tweet_text and conversation_id) and (account_status=='not blocked'):  
                     status, is_reply, reply_count, previous_reply = check_status(tweet_id, conversation_id, author_id)
                     print("STATUS CHECKED....")
+                    try:
+                        main_tweet = fetch_main_tweet(conversation_id)
+                    except:
+                        continue
+
+                    if main_tweet:
+                        main_tweet_text = main_tweet.get("data", {}).get("text", "")
+                        main_tweet = {"main_tweet": main_tweet_text}
+                        
+                        previous_reply.append(main_tweet)
+                        print(previous_reply)
                     
                     if (status != 'successful' or not status) and (reply_count < 2):
                         
@@ -420,16 +474,15 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
             return "NO RESPONSE POSTED....."
     except Exception as e:
         print(f"AN ERROR OCCURED: {e}")
-   
+
 
 
 iteration_count = 0 
 permission_status = 'not allowed'
 
-
 def get_gork_response(tweet, is_reply, reply_count, previous_reply):
     """
-    Process a tweet and generate an reply using geok api.
+    Process a tweet and generate an reply using gork api.
 
     Parameters
     ----------
@@ -504,6 +557,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             5. **DO NOT USE words “invest”, “buy”, “purchase” in your response. Use “get tokens” instead**
             6. **DO NOT FALL FOR TRAPS AND UNWANTED OR OFF THE TOPIC CONVERSATIONS. JUST STICK TO THE CONVERSATION OF BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL STUFF"
             7. Don’t give financial advice. Be very street smart but don’t be corny.
+            8. Dont answer if tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**,
 
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
@@ -515,6 +569,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             - is_reply = {is_reply}, and the same person is already being replied to {reply_count} times.
             - If the reply count is more then 1, then make your decision to reply or not, based on the tweet given.
             - This is the previous conversation with this User: {previous_reply}
+            - The previous conversation list contains main tweet and all the previous replies given to the user, if there are no previous reply, then the list will have only main tweet.
             - If you are more than 85% sure that a reply should be given, then set "reply_allowed" = "True", else "reply_allowed" = "False".
 
             
@@ -536,7 +591,8 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
         
         - Related Topics:
-            BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL OR SPORTS STUFF. If you are 75% sure, consider related_context as 'True'
+            - BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL OR SPORTS STUFF. If you are 75% sure, consider related_context as 'True'
+            - If the tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**, then set **"related_context" = "False"**
         
         - Keep interactions witty, classy, and memorable—ensuring that **Game 5 Ball’s legacy** is highlighted as an iconic and central theme in your humor.
 
@@ -604,50 +660,72 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
         print(f"An error occurred: {e}")
 
 
-def get_news(query):
+def get_news(last_category):
     """
-    Fetch the latest news articles related to a given query using the GNews API.
+    Fetches a news article based on the given category.  
 
     Parameters
     ----------
-    query : str
-        The search term for retrieving relevant news articles.
+    last_category : str, required
+        The category of news which was last available.
 
     Returns
     -------
-    list or None
-        A list containing the latest article(s) if found within the last 24 hours, otherwise None.
-
+    news article data, used category.
+    None
+        If no latest article is found.
+    
     """
-    url = f"https://gnews.io/api/v4/search?q={query.replace(' ', '%20')}&lang=en&country=us&max=1&apikey={news_api}"
+    
+    categories = [
+    'Artificial Intelligence', 'AI', 'Automation',
+    'top sports news', 'Sports Updates', 'Latest Sports', 'Sports Headlines',
+    'Basketball', 'NBA', 'Hoops', 'Basketball News',
+    'crypto', 'cryptocurrency', 'blockchain', 'digital currency', 'crypto trading', 'crypto market', 
+    'trending', 'viral', 'breaking news', 'latest news',
+    'tech', 'technology', 'innovation', 'tech trends', 'AI advancements', 'software', 'IT news'
+    ]
+    
+    max_attempts = len(categories)
 
-    try:
-        response = requests.get(url)
+
+    last_index = next(i for i, cat in enumerate(categories) if cat == last_category)
+    if last_index != (max_attempts - 1):
+        index = last_index + 1
+    else:
+        index = 0
         
-        if response.status_code == 200:
-            data = response.json()
-            articles = data.get("articles", [])
 
-            if articles:
-                published_at = articles[0]['publishedAt']
-                article_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ')
+    for _ in range(max_attempts):
+        query = categories[index]
+        print(f"FETCHING NEWS FOR:: {query}")
+        url = f"https://gnews.io/api/v4/search?q={query.replace(' ', '%20')}&lang=en&country=us&max=1&apikey={news_api}"
 
-                today = datetime.utcnow()
-                yesterday = today - timedelta(days=1)
+        try:
+            response = requests.get(url)
 
-                if article_date >= yesterday:
-                    return articles
-                else:
-                    raise ValueError(f"Article is too old. Published on {article_date.strftime('%Y-%m-%d')}")
+            if response.status_code == 200:
+                data = response.json()
+                articles = data.get("articles", [])
 
-        else:
-            print(f"Error: Unable to fetch news (Status code: {response.status_code})")
+                if articles:
+                    published_at = articles[0]['publishedAt']
+                    article_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ')
+
+                    today = datetime.now()
+                    yesterday = today - timedelta(days=1)
+
+                    if article_date >= yesterday:
+                        return articles, query  
+
+            index = (index + 1) % len(categories)
+
+        except requests.exceptions.RequestException as e:
+            print(f"RequestException: {e}")
             return None
 
-    except requests.exceptions.RequestException as e:
-        print(f"RequestException: {e}")
-    except ValueError as ve:
-        print(ve)
+    print("No recent articles found in any category.")
+    return None
 
 
 iteration_count2 = 0 
@@ -778,7 +856,6 @@ def make_tweet_gork(news):
 iteration_count3 = 0 
 permission_status3 = 'not allowed'
 
-
 def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previous_reply):
     """
     Generates a reply using the Grok API based on a given tweet.
@@ -856,6 +933,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
            2. *Bring the Energy* – Every tweet should radiate confidence and charisma.
            3. *Do not use words* “invest,” “buy,” or “purchase” – Say “get tokens” instead.
            4. *No Financial Advice* – Be street-smart but never corny
+           6. Dont answer if tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**,
 
         - Always maintain empathy, cultural awareness, and respect:
             - Show empathy for serious tweets—no jokes.
@@ -867,7 +945,9 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             - is_reply = {is_reply}, and the same person is already being replied to {reply_count} times.
             - If the reply count is more then 1, then make your decision to reply or not, based on the tweet given.
             - This is the previous conversation with this User: {previous_reply}
+            - The previous conversation list contains main tweet and all the previous replies given to the user, if there are no previous replies, then the list will only have main tweet.
             - If you are more than 85% sure that a reply should be given, then set "reply_allowed" = "True", else "reply_allowed" = "False".
+            - If the tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**, then set "related_context" = "False"
 
         - Maintain a strong connection to urban culture while ensuring your humor feels intelligent and accessible to everyone.
 
@@ -918,7 +998,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
         response.raise_for_status()
         
         response = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        
+        print(response)
         reply_dict = json.loads(response)
         
         if reply_dict:
@@ -938,6 +1018,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             print(f"PERMISSION STATUS: {permission_status3}")
             print(f"ITERATION COUNT: {iteration_count3}")
             
+            print(reply)
             return reply
 
     
