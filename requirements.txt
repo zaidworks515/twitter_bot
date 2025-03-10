@@ -7,7 +7,7 @@ schedule
 regex
 sentence-transformers
 openai-whisper
-moviepy=1.0.3
+moviepy==1.0.3
 opencv-python 
 opencv-contrib-python 
 opencv-contrib-python-headless
