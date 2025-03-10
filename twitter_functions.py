@@ -695,6 +695,12 @@ def get_news(last_category):
     else:
         index = 0
         
+    def log_error(status_code, error_text):
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = f"error code: {status_code}\nerror text: {error_text}\ncurrent time: {current_time}\n================\n"
+        
+        with open("get_news_error.txt", "a") as file:
+            file.write(log_entry)  # Append to the file
 
     for _ in range(max_attempts):
         query = categories[index]
@@ -719,13 +725,8 @@ def get_news(last_category):
                         return articles, query
             else:
                 print(f"Failed to fetch news for {query}. Status code: {response.status_code}") 
-                print(f"Response content: {response.text}")  
-                
-                if response.status_code == 403:
-                    time.sleep(30*60)
-                else:
-                    time.sleep(60)
-                    
+                print(f"Response content: {response.text}") 
+                log_error(response.status_code, response.text)  # Log the error into the file    
 
             index = (index + 1) % len(categories)
 
