@@ -48,40 +48,46 @@ def posting_tweet():
     with post_scheduler_lock:
         print('posting_tweet RUNNING...')
         print('posting_tweet sleep start')
-        time.sleep(1)
+        time.sleep(15)
         print('posting_tweet sleep stop')
         print("=" * 20)
     
 
 
-
-
-def run_scheduler():
+def tagged_tweet_reply_scheduler():
+    """ Runs the tweet reply scheduler every 15 minutes. """
     while True:
-        schedule.run_pending()
-        time.sleep(1)
-        
-        
-def run_selected_reply_scheduler():
-    thread = threading.Thread(target=selected_reply_scheduler)
-    thread.start()
+        tweet_reply_scheduler()
+        time.sleep(2)
 
 
-schedule.every(1).minutes.do(tweet_reply_scheduler)
+def posting_tweet_scheduler():
+    """ Runs the posting tweet function every 4 hours. """
+    while True:
+        posting_tweet()
+        time.sleep(5)
 
-schedule.every(2.5).minutes.do(posting_tweet) 
 
-schedule.every(4).minutes.do(run_selected_reply_scheduler)
+def selected_reply_scheduler_runner():
+    """ Runs the selected reply function every 680 minutes. """
+    while True:
+        selected_reply_scheduler()
+        time.sleep(15)
 
 
 if __name__ == "__main__":
     try:
-        scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-        scheduler_thread.start()
+        tagged_tweet_reply_thread = threading.Thread(target=tagged_tweet_reply_scheduler, daemon=True)
+        tagged_tweet_reply_thread.start()
+        
+        tweet_posting_thread = threading.Thread(target=posting_tweet_scheduler, daemon=True)
+        tweet_posting_thread.start()
+        
+        selected_reply_thread = threading.Thread(target=selected_reply_scheduler_runner, daemon=True)
+        selected_reply_thread.start()
 
         port = int(port)
         app.run(host='0.0.0.0', port=port, debug=False)
-            
 
     except Exception as e:
         logging.error(f"An error occurred when starting the app: {str(e)}")
