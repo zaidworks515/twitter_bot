@@ -8,7 +8,6 @@ from db_queries import check_status, insert_results, check_tweets, insert_result
 from slang_picker import SlangPicker
 import re
 from sentence_transformers import SentenceTransformer, util
-import time
 
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -699,7 +698,6 @@ def get_news(last_category):
     for _ in range(max_attempts):
         query = categories[index]
         print(f"FETCHING NEWS FOR:: {query}")
-        time.sleep(5)
         url = f"https://gnews.io/api/v4/search?q={query.replace(' ', '%20')}&lang=en&country=us&max=1&apikey={news_api}"
 
         try:
@@ -717,13 +715,7 @@ def get_news(last_category):
                     yesterday = today - timedelta(days=1)
 
                     if article_date >= yesterday:
-                        print("=====" * 10)
-                        print("NEWS ARTICLE::::")
-                        print(articles)
-                        print("=====" * 10)
-                        return articles, query
-            else:
-                print(f"Failed to fetch news for {query}. Status code: {response.status_code}")
+                        return articles, query  
 
             index = (index + 1) % len(categories)
 
