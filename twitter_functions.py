@@ -718,8 +718,14 @@ def get_news(last_category):
                     if article_date >= yesterday:
                         return articles, query
             else:
-                print(f"Failed to fetch news for {query}. Status code: {response.status_code}")  
-                time.sleep(10)
+                print(f"Failed to fetch news for {query}. Status code: {response.status_code}") 
+                print(f"Response content: {response.text}")  
+                
+                if response.status_code == 403:
+                    time.sleep(30*60)
+                else:
+                    time.sleep(60)
+                    
 
             index = (index + 1) % len(categories)
 
