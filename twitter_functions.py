@@ -726,7 +726,9 @@ def get_news(last_category):
             else:
                 print(f"Failed to fetch news for {query}. Status code: {response.status_code}") 
                 print(f"Response content: {response.text}") 
-                log_error(response.status_code, response.text)  # Log the error into the file    
+                log_error(response.status_code, response.text)  # Log the error into the file
+                time.sleep(300)
+                    
 
             index = (index + 1) % len(categories)
 
