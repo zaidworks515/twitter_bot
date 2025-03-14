@@ -12,3 +12,4 @@ opencv-python
 opencv-contrib-python 
 opencv-contrib-python-headless
 ffmpeg-python
+elevenlabs
