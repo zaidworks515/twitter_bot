@@ -2,16 +2,168 @@ from datetime import datetime, timedelta
 import json
 import tweepy
 from requests_oauthlib import OAuth1
-from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key, news_api
+from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key, news_api, eleven_labs_api_key
 import requests
 from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets, check_last_tweet_category, check_block_status
 from slang_picker import SlangPicker
 import re
 from sentence_transformers import SentenceTransformer, util
+from videogen import make_video_complete, eleven_labs_audio_generation
+import os
 import time
 
-
+#Global Var
 model = SentenceTransformer('all-MiniLM-L6-v2')
+
+
+def video_caption(tweet):
+    """
+    Generate a caption based on the given tweet using the Grok API.
+
+    Parameters
+    ----------
+    tweet : str
+
+    Returns
+    -------
+    str
+       Generated tweet.
+
+    """    
+    
+
+    url = "https://api.x.ai/v1/chat/completions"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {gork_api_key}"
+    }
+    
+    system_instructions = (f"""
+    - You are a highly charismatic, bold, and witty caption-generating bot with sharp humor. Your tone blends street-smart confidence, cultural awareness, and clever sarcasm—like prime Michael Jordan trash talk mixed with Dave Chappelle and Katt Williams' raw humor.
+
+        - Generate a **one-liner** caption for a video based on the given tweet.  
+        - The caption **must be under 12 words**—short, punchy, and engaging.  
+        - Avoid explanations, summaries, or extra details. **Keep it snappy.**  
+    """)   
+        
+    data = {
+        "messages": [
+            {
+                "role": "system",
+                "content": system_instructions
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Generate a one line caption for the following tweet:\n"
+                    f"Tweet: {tweet}\n"
+                )
+            }
+        ],
+        "model": "grok-2",
+        "stream": False,
+        "temperature": 1.0
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+
+        caption = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+
+        print(f"caption: {caption}")
+        
+        return caption
+    
+    except requests.exceptions.RequestException as e:
+        return f"An error occurred: {e}"
+    
+
+def upload_video_to_twitter(caption, video_path='./video_generation/final_video_with_music.mp4', api_key=api_key, api_secret=api_secret, access_token=access_token, access_token_secret=access_token_secret, media_type="video/mp4", media_category="amplify_video"):
+    try:
+        if not os.path.exists(video_path):
+            raise FileNotFoundError("Video file not found.")
+
+        total_bytes = os.path.getsize(video_path)
+        auth = OAuth1(api_key, api_secret, access_token, access_token_secret)
+        
+        url = "https://upload.twitter.com/1.1/media/upload.json"
+        
+        # Initialize upload
+        data = {
+            "command": "INIT",
+            "media_type": media_type,
+            "media_category": media_category,
+            "total_bytes": total_bytes
+        }
+        
+        response = requests.post(url, auth=auth, data=data)
+        response.raise_for_status()
+        media_id = response.json().get("media_id_string")
+        if not media_id:
+            raise ValueError("Failed to initialize upload.")
+        
+        chunk_size = 5 * 1024 * 1024
+        segment_index = 0
+        
+        with open(video_path, "rb") as video_file:
+            while chunk := video_file.read(chunk_size):  #loop will continue till the chunk is not empty
+                print(f"Uploading chunk {segment_index}...")
+                data = {
+                    "command": "APPEND",
+                    "media_id": media_id,
+                    "segment_index": segment_index
+                }
+                files = {"media": chunk}
+                chunk_response = requests.post(url, auth=auth, data=data, files=files)
+                chunk_response.raise_for_status()
+                segment_index += 1
+        
+        # Finalize upload
+        data = {"command": "FINALIZE", "media_id": media_id}
+        response = requests.post(url, auth=auth, data=data)
+        response.raise_for_status()
+        
+        # Check processing status
+        status_url = f"{url}?command=STATUS&media_id={media_id}"
+
+        while True:
+            status_response = requests.get(status_url, auth=auth)
+            status_response.raise_for_status()
+            processing_info = status_response.json().get("processing_info", {})
+            state = processing_info.get("state")
+            
+            if state == "succeeded":
+                print("Upload processed successfully!")
+                break
+            elif state == "failed":
+                raise RuntimeError("Upload failed during processing.")
+            
+            delay = processing_info.get("check_after_secs", 5)
+            print(f"Processing... Checking again in {delay} seconds.")
+            time.sleep(delay)
+        
+        # Post tweet
+        tweet_url = "https://api.twitter.com/2/tweets"
+        json_data = {"text":caption, "media": {"media_ids": [media_id]}}
+        tweet_response = requests.post(tweet_url, auth=auth, json=json_data)
+        tweet_response.raise_for_status()
+        tweet_json = tweet_response.json()
+        print("Tweet posted successfully!", tweet_json)
+        return tweet_json
+    
+
+    except requests.exceptions.RequestException as req_err:
+        print("Network error:", req_err)
+    except FileNotFoundError as file_err:
+        print("File error:", file_err)
+    except ValueError as val_err:
+        print("Value error:", val_err)
+    except Exception as e:
+        print("An unexpected error occurred:", e)
+    return None
+
 
 def post_tweet():
     """
@@ -31,11 +183,8 @@ def post_tweet():
         If no article is found, a similar tweet already exists, or an error occurs while posting.
     
     """
-    
-
     post = False
     
-
     last_tweet_category = check_last_tweet_category()
     
     data = get_news(last_category=last_tweet_category)
@@ -77,32 +226,35 @@ def post_tweet():
         post = True
 
     if post:
-        generated_tweet = make_tweet_gork(article)  
+        generated_tweet = make_tweet_gork(article)
+        
+    if generated_tweet:
+        audio = eleven_labs_audio_generation(generated_tweet, eleven_labs_api_key)
+        
+    if audio:
+        complete_video = make_video_complete()
+        if complete_video:
+            try:
+                caption = video_caption(generated_tweet)
+                tweet_response = upload_video_to_twitter(caption)
+                print(f"Video posted successfully: {tweet_response}")
+            
+                if tweet_response:
+                    insert_results_make_tweets(
+                        news_title=fetched_title,
+                        news_description=fetched_description,
+                        generated_tweet=generated_tweet,
+                        tweet_category=article_category,
+                        post_status='successful'
+                    )
+                    print(f"Tweet posted successfully: {tweet_response}")
+                    
+                    print("Temporary audio and video files deleted.")
+                    return tweet_response
 
-
-        client = tweepy.Client(
-            consumer_key=api_key,
-            consumer_secret=api_secret,
-            access_token=access_token,
-            access_token_secret=access_token_secret
-        )
-
-        try:
-            response = client.create_tweet(text=generated_tweet)
-            if response:
-                insert_results_make_tweets(
-                    news_title=fetched_title,
-                    news_description=fetched_description,
-                    generated_tweet=generated_tweet,
-                    tweet_category=article_category,
-                    post_status='successful'
-                )
-                print(f"Tweet posted successfully: {response.data}")
-                return response.data  
-
-        except tweepy.TweepyException as e:
-            print(f"Error posting tweet: {e}")
-            return None
+            except tweepy.TweepyException as e:
+                print(f"Error posting tweet: {e}")
+                return None
 
     return None
 
