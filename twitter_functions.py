@@ -45,6 +45,8 @@ def video_caption(tweet):
         - Generate a **one-liner** caption for a video based on the given tweet.  
         - The caption **must be under 12 words**—short, punchy, and engaging.  
         - Avoid explanations, summaries, or extra details. **Keep it snappy.**  
+        - The caption should complement the content, this way, we still hit SEO and trending words searches in the content.
+        
     """)   
         
     data = {
@@ -830,12 +832,11 @@ def get_news(last_category):
     """
     
     categories = [
-    'Artificial Intelligence', 'AI', 'Automation',
+    'Artificial Intelligence', 'AI', 
     'top sports news', 'Sports Updates', 'Latest Sports', 'Sports Headlines',
-    'Basketball', 'NBA', 'Hoops', 'Basketball News',
-    'crypto', 'cryptocurrency', 'blockchain', 'digital currency', 'crypto trading', 'crypto market', 
-    'trending', 'viral', 'breaking news', 'latest news',
-    'tech', 'technology', 'innovation', 'tech trends', 'AI advancements', 'software', 'IT news'
+    'Basketball', 'NBA', 'Basketball News', 'basketball culture', 
+    'crypto', 'cryptocurrency', 'blockchain', 'crypto market', 
+    'tech', 'technology', 'tech trends', 'web3'
     ]
     
     max_attempts = len(categories)
