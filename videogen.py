@@ -212,7 +212,7 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
                 subtitles.append({"start": start_time, "end": start_time + chunk_duration, "text": chunk_text})
                 start_time += chunk_duration  
 
-        font_path = "font/neue_pixel_sans/NeuePixelSans.ttf"
+        font_path = "./video_generation/font/neue_pixel_sans/NeuePixelSans.ttf"
         font_size = 55
         font = ImageFont.truetype(font_path, font_size)
 
