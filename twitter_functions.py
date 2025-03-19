@@ -55,8 +55,8 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
         
         
     - **Marketing Strategy:**
-        - If marketing_status = True, then add the following links in the caption Links:  to get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
-        
+        - If marketing_status = True, then add the following links in the caption Links:  To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
+        - Do not use any sort of hashtags in the caption. 
         
 
     """)
