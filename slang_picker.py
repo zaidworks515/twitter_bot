@@ -17,7 +17,7 @@ class SlangPicker:
             "Fire", "Woke", "Clout", "No cap", "Chill", "Drip", "Savage", "Squad", "Shade", "Mood",
             "Baller", "Buckets", "Dime", "Splash", "Swish", "Brick", "Handles", "Posterize", "Full-Court Press", "Ankle Breaker",
             "And-one", "Alley-oop", "Crossover", "Fadeaway", "Triple-double", "Putback", "Fast break", "Hustle", "Iso", "Box out",
-            "yo", "bruh", "fam"
+            "bruh", "fam"
         ]
 
         available_terms = [term for term in all_terms if term not in self.last_picked_terms]

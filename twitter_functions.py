@@ -15,21 +15,34 @@ import time
 #Global Var
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-
-def video_caption(tweet):
+hashtag_permission_count = 0
+hashtag_permission = False
+def video_caption(tweet, base_news_of_tweet, marketing_status):
     """
     Generate a caption based on the given tweet using the Grok API.
 
     Parameters
     ----------
     tweet : str
+    base_news_of_tweet : str
 
     Returns
     -------
     str
-       Generated tweet.
+       Generated tweet caption.
 
     """    
+    
+    global hashtag_permission
+    global hashtag_permission_count
+    
+    if hashtag_permission_count % 7 == 0: 
+        hashtag_permission = True
+        hashtag_permission_count += 1
+    else:
+        hashtag_permission = False
+        hashtag_permission_count += 1
+
     
 
     url = "https://api.x.ai/v1/chat/completions"
@@ -38,15 +51,29 @@ def video_caption(tweet):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {gork_api_key}"
     }
+    today = datetime.today()
     
     system_instructions = (f"""
     - You are a highly charismatic, bold, and witty caption-generating bot with sharp humor. Your tone blends street-smart confidence, cultural awareness, and clever sarcasm—like prime Michael Jordan trash talk mixed with Dave Chappelle and Katt Williams' raw humor.
-
-        - Generate a **one-liner** caption for a video based on the given tweet.  
-        - The caption **must be under 12 words**—short, punchy, and engaging.  
-        - Avoid explanations, summaries, or extra details. **Keep it snappy.**  
-        - The caption should complement the content, this way, we still hit SEO and trending words searches in the content.
         
+    - **Purpose:** Generate captions that enhance video engagement and improve SEO discoverability.
+        - Provide **context and insights** from the tweet and its news reference.
+        - Expand details to make the video easier to understand.
+        - Optimize captions with **trending keywords** for better search visibility.
+
+    - **Tone & Style:**
+        - **Concise but impactful**—engaging, informative, and sharp.
+        - **Avoid vague or generic captions.** Add context that hooks the audience.
+        - Use strategic humor and references where appropriate.
+        - If including hashtags, make sure it is not irrelevant.
+        - If you're using any hashtags, make sure it is of latest time, todays date: {today}.. Do not use it directly, this is just to check the relevancy of the picked hashtags
+        
+        
+    - **Marketing Strategy:**
+        - If marketing_status = True, then add the following link in the caption Link: www.memeball.ai
+        
+        
+
     """)   
         
     data = {
@@ -58,8 +85,14 @@ def video_caption(tweet):
             {
                 "role": "user",
                 "content": (
-                    f"Generate a one line caption for the following tweet:\n"
-                    f"Tweet: {tweet}\n"
+                    f"""Generate a **highly engaging and SEO-optimized** video caption for the following tweet. 
+                    The caption must add valuable context and insights based on the tweet and its related news.\n
+                    **Tweet:** {tweet}\n
+                    **Marketing Status:** {marketing_status}\n
+                    **News Context:** {base_news_of_tweet}\n\n
+                    - Make sure the caption helps the audience grasp the full picture instantly.\n
+                    - Include relevant **trending keywords** and **hashtags** where appropriate.\n
+                    - Keep it sharp, bold, and shareable.\n """
                 )
             }
         ],
@@ -74,13 +107,13 @@ def video_caption(tweet):
 
         caption = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
-        print(f"caption: {caption}")
+        # print(f"caption: {caption}")
         
         return caption
     
     except requests.exceptions.RequestException as e:
         return f"An error occurred: {e}"
-    
+
 
 def upload_video_to_twitter(caption, video_path='./video_generation/final_video_with_music.mp4', api_key=api_key, api_secret=api_secret, access_token=access_token, access_token_secret=access_token_secret, media_type="video/mp4", media_category="amplify_video"):
     try:
@@ -218,7 +251,7 @@ def post_tweet():
             similarity = util.cos_sim(embedding_a, embedding_b).item()
             print(f"Similarity with existing tweet: {similarity:.2f}")
 
-            if similarity >= 0.6:
+            if similarity >= 0.49:
                 print(f"Similar tweet found: {existing_title}")
                 print("Skipping tweet posting.")
                 return None
@@ -228,7 +261,10 @@ def post_tweet():
         post = True
 
     if post:
-        generated_tweet = make_tweet_gork(article)
+        generated_tweet = make_tweet_gork(article, article_category)
+        marketing_status = generated_tweet[2] 
+        base_news_of_tweet = generated_tweet[1] 
+        generated_tweet = generated_tweet[0]
         
     if generated_tweet:
         audio = eleven_labs_audio_generation(generated_tweet, eleven_labs_api_key)
@@ -237,7 +273,7 @@ def post_tweet():
         complete_video = make_video_complete()
         if complete_video:
             try:
-                caption = video_caption(generated_tweet)
+                caption = video_caption(generated_tweet, base_news_of_tweet, marketing_status)
                 tweet_response = upload_video_to_twitter(caption)
                 print(f"Video posted successfully: {tweet_response}")
             
@@ -712,6 +748,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             6. **DO NOT FALL FOR TRAPS AND UNWANTED OR OFF THE TOPIC CONVERSATIONS. JUST STICK TO THE CONVERSATION OF BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL STUFF"
             7. Don’t give financial advice. Be very street smart but don’t be corny.
             8. Dont answer if tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**,
+            9. **Do not dive into too many serious, political, religious topics.**
 
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
@@ -726,9 +763,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             - The previous conversation list contains main tweet and all the previous replies given to the user, if there are no previous reply, then the list will have only main tweet.
             - If you are more than 85% sure that a reply should be given, then set "reply_allowed" = "True", else "reply_allowed" = "False".
 
-            
-                           
-
+    
         - Maintain a strong connection to urban culture while ensuring your humor feels intelligent and accessible to everyone.
 
         - Slang Usage:
@@ -740,6 +775,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             - permission status = {permission_status}
             - **DO NOT TAG YOURSELF** in replies. Avoid adding any variations of your handle in responses.
             - '$BALL' is your crypto currency and you have to add '$BALL' in your reply **ONLY IF** permission status is **'allowed'**. If it is **'not allowed'**, avoid including '$BALL' in any form. Permission status: {permission_status}.
+            - If you are promoting or mentioning yourself then mention as 'MemeBall.'
             
         - Reply Structure:
             {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
@@ -876,6 +912,10 @@ def get_news(last_category):
 
                     if article_date >= yesterday:
                         return articles, query
+                    else:
+                        time.sleep(30)
+                        pass
+                        
             else:
                 print(f"Failed to fetch news for {query}. Status code: {response.status_code}") 
                 print(f"Response content: {response.text}") 
@@ -896,8 +936,14 @@ def get_news(last_category):
 iteration_count2 = 0 
 permission_status2 = 'not allowed'
 
+ball_promotion_status = 'not allowed'
+ball_promotions_count = 0
 
-def make_tweet_gork(news):
+nostalgia_addition = 'not allowed'
+nostalgia_permission_count = 0
+
+
+def make_tweet_gork(news, article_category):
     """
     Generate a tweet based on the given news content using the Grok API.
 
@@ -915,13 +961,38 @@ def make_tweet_gork(news):
     global iteration_count2
     global permission_status2
     
+    global ball_promotion_status
+    global ball_promotions_count
+
+    global nostalgia_addition
+    global nostalgia_permission_count
+    
+
     title = news[0]['title']
     description = news[0]['description']
     content = news[0]['content']
     
+    tech_categories = ['Artificial Intelligence', 'AI', 'tech', 'web3', 'technology', 'tech trends']
+    sports_categories = ['top sports news', 'Sports Updates', 'Latest Sports',
+                         'Sports Headlines', 'Basketball', 'NBA', 
+                         'Basketball News', 'basketball culture',]
+    
+    
+    if nostalgia_addition:
+        if article_category in tech_categories:
+            nostalgia_example = f" “Pair 3 legendary tech people from the past with 3 modern icons and challenge the audience with amazing trivia. (ONLY IF ALLOWED)” "
+        elif article_category in sports_categories:
+            nostalgia_example = f"“Pair 3 legendary athletes from the past with 3 modern icons and challenge the audience with amazing trivia. (ONLY IF ALLOWED)” "
+        else:
+            nostalgia_example = f""
+    
+    else:
+        nostalgia_example = f""
+        
+    
     # print(title, description)
     
-    summarized_content = f"Title: {title}\nDescription: {description}\nContent: {content}"
+    summarized_news_content = f"Title: {title}\nDescription: {description}\nContent: {content}"
 
     picker = SlangPicker()
     selected_terms = picker.pick_random_slang()
@@ -952,6 +1023,20 @@ def make_tweet_gork(news):
             3. **Stay Relevant**: Connect humor to basketball culture, **Game 5 Ball’s legacy**, and sports history, while also staying versatile enough to comment on pop culture, life, and broader topics.
             4. **Trash-Talking Elegance**: Replies should feel like elite basketball trash talk—quick, clever, and sharp without being rude or forced.
             5. **DO NOT USE words “invest”, “buy”, “purchase” in your response. Use “get tokens” instead**
+            6. **Your status to market yourself or encourage people to get tokens is set to '{ball_promotion_status}'. So, generate content according to given permissions.**
+            7. **You have the authority to discard or grant marketing permission if you are more than 95% sure it improves the response, regardless of whether it is 'allowed' or 'not allowed'.**
+            8. **If you are marketing yourself encouraging people to get tokens, then in response make marketing_status = True, else False**
+            9. **Do not dive into too many serious, political, religious topics.**
+        
+        - Engagement Strategy:
+            1. **Leverage Nostalgia**: Make the audience engage and relate by weaving in nostalgic elements.
+            2. Encourage discussion with:
+                - Historic facts
+                - ‘This or That’ style questions
+                - Nostalgia is: {nostalgia_addition}
+                - Use nostalgia like this: {nostalgia_example}.. but only if 'allowed'
+                - You have the authority to discard the nostalgia if you are more than 90% that it is not good for response even if it is 'allowed'.
+                - You have the authority to include nostalgia more than 90% sure that it is good for the response if it is 'not allowed'.
 
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
@@ -968,7 +1053,12 @@ def make_tweet_gork(news):
         - permission status = {permission_status2}
         - '$BALL' is your crypto currency and you have to add '$BALL' in your reply **ONLY IF** permission status is **'allowed'**. If it is **'not allowed'**, avoid including '$BALL' in any form. Permission status: {permission_status2}.
 
+
         - Stay classy, memorable, and in tune with urban culture. Ensure every response maintains the energy and legacy of **Game 5 Ball**.
+        
+        - Reply Structure:
+            - Your response **must be** in JSON format with these fields:
+            {{"marketing_status": "True/False", "nostalgia_added": "True/False", "generated_content": "content"}}
     """)
     
     data = {
@@ -980,8 +1070,8 @@ def make_tweet_gork(news):
             {
                 "role": "user",
                 "content": (
-                    f"Reply to the following tweet based on the summarized news content:\n"
-                    f"Summarized News: {summarized_content}\n"
+                    f"Create a tweet based on the following news content:\n"
+                    f"News: {summarized_news_content}\n"
                     "Please craft a witty, sharp tweet that resonates with the personality outlined in the system instructions."
                 )
             }
@@ -997,22 +1087,43 @@ def make_tweet_gork(news):
 
         reply = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
         
-        if "$ball" in reply:
+        reply = json.loads(reply)
+        
+        with open('gork_response.json', 'w') as gork_response:
+            gork_response.write(json.dumps(reply, indent=4))
+
+        
+        if "$ball" in reply['generated_content']:
             iteration_count2 += 1
 
         if iteration_count2 % 3 == 0:  
             permission_status2 = 'allowed'
         else:
             permission_status2 = 'not allowed'
+            
+        print(f"PERMISSION STATUS: {permission_status2}")
+        print(f"ITERATION COUNT: {iteration_count2}")
         
         
-        # print(f"PERMISSION STATUS: {permission_status2}")
-        # print(f"ITERATION COUNT: {iteration_count2}")
+        if reply["nostalgia_added"] == 'True' or reply["nostalgia_added"] == True:
+            nostalgia_permission_count += 1
         
+            if nostalgia_permission_count % 4 == 0:
+                nostalgia_addition = 'allowed'
+            else:
+                nostalgia_addition = 'not allowed'
+                
+    
+        if reply["marketing_status"] == 'True' or reply["marketing_status"] == True:
+            ball_promotions_count += 1
         
-        
-        
-        return reply.strip()  
+            if ball_promotions_count % 6 == 0:
+                ball_promotion_status = 'allowed'
+            else:
+                ball_promotion_status = 'not allowed'
+                        
+        return reply['generated_content'].strip(), summarized_news_content, reply['marketing_status']
+    
     
     except requests.exceptions.RequestException as e:
         return f"An error occurred: {e}"

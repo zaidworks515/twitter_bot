@@ -87,7 +87,7 @@ def tweet_reply_scheduler():
             logging.error(f"Error in scheduler: {e}", exc_info=True)
 
 
- 
+
 selected_reply_scheduler_lock = threading.Lock()
 def selected_reply_scheduler():
     """
@@ -141,7 +141,6 @@ def selected_reply_scheduler():
                 continue        
                 
         print("Finished replying to selected accounts.")      
-
 
 
 
