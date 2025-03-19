@@ -15,8 +15,6 @@ import time
 #Global Var
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-hashtag_permission_count = 0
-hashtag_permission = False
 def video_caption(tweet, base_news_of_tweet, marketing_status):
     """
     Generate a caption based on the given tweet using the Grok API.
@@ -32,18 +30,7 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
        Generated tweet caption.
 
     """    
-    
-    global hashtag_permission
-    global hashtag_permission_count
-    
-    if hashtag_permission_count % 7 == 0: 
-        hashtag_permission = True
-        hashtag_permission_count += 1
-    else:
-        hashtag_permission = False
-        hashtag_permission_count += 1
 
-    
 
     url = "https://api.x.ai/v1/chat/completions"
     
@@ -51,7 +38,6 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {gork_api_key}"
     }
-    today = datetime.today()
     
     system_instructions = (f"""
     - You are a highly charismatic, bold, and witty caption-generating bot with sharp humor. Your tone blends street-smart confidence, cultural awareness, and clever sarcasm—like prime Michael Jordan trash talk mixed with Dave Chappelle and Katt Williams' raw humor.
@@ -65,16 +51,15 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
         - **Concise but impactful**—engaging, informative, and sharp.
         - **Avoid vague or generic captions.** Add context that hooks the audience.
         - Use strategic humor and references where appropriate.
-        - If including hashtags, make sure it is not irrelevant.
-        - If you're using any hashtags, make sure it is of latest time, todays date: {today}.. Do not use it directly, this is just to check the relevancy of the picked hashtags
+        - Use language that reflects the vibrant energy of urban culture, avoiding corny or overused phrases like “yo,” “fam,” "bruh" or “peep” Instead, opt for clever, situational slang that feels natural and sharp.
         
         
     - **Marketing Strategy:**
-        - If marketing_status = True, then add the following link in the caption Link: www.memeball.ai
+        - If marketing_status = True, then add the following links in the caption Links:  to get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
         
         
 
-    """)   
+    """)
         
     data = {
         "messages": [
@@ -91,14 +76,14 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
                     **Marketing Status:** {marketing_status}\n
                     **News Context:** {base_news_of_tweet}\n\n
                     - Make sure the caption helps the audience grasp the full picture instantly.\n
-                    - Include relevant **trending keywords** and **hashtags** where appropriate.\n
+                    - Include relevant **trending keywords** where appropriate.\n
                     - Keep it sharp, bold, and shareable.\n """
                 )
             }
         ],
         "model": "grok-2",
         "stream": False,
-        "temperature": 1.0
+        "temperature": 0.6
     }
     
     try:
@@ -1014,7 +999,7 @@ def make_tweet_gork(news, article_category):
         - Voice Style:
             - Trash-talk like Michael Jordan did in his prime—confident, cutting, and endlessly entertaining.
             - Deliver humor with the bold, raw energy of Dave Chappelle and Katt Williams, balanced with the wisdom and street-smart flair of someone who’s “been around the block.”
-            - Use language that reflects the vibrant energy of urban culture, avoiding corny or overused phrases like “yo,” “fam,” or “bruh.” Instead, opt for clever, situational slang that feels natural and sharp.
+            - Use language that reflects the vibrant energy of urban culture, avoiding corny or overused phrases like “yo,” “fam,” "peep" or “bruh.” Instead, opt for clever, situational slang that feels natural and sharp.
             - Add emojis strategically to enhance tone and impact but avoid overuse—keep it classy and effective.
 
         - Guidelines:
@@ -1045,7 +1030,7 @@ def make_tweet_gork(news, article_category):
     
         
         - Slang Usage:
-            - Use only the slang provided from the following list: ***{selected_terms}***. Any other slang is strictly forbidden, especially “yo,” “bruh,” and “fam.”
+            - Use only the slang provided from the following list: ***{selected_terms}***. Any other slang is strictly forbidden, especially “yo”, “bruh”, "peep", and “fam.”
             - The slang you use must feel situational, sharp, and vibrant without overloading the conversation.
 
         - Your Twitter Handle: "@Game5Ball" or "@game5ball".
