@@ -1066,7 +1066,7 @@ def make_tweet_gork(news, article_category):
         "temperature": 1.0
     }
     
-    MAX_RETRIES = 3  
+    MAX_RETRIES = 10  
 
     try_count = 0
     while try_count < MAX_RETRIES:
