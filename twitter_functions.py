@@ -247,12 +247,12 @@ def post_tweet():
 
     if post:
         generated_tweet = make_tweet_gork(article, article_category)
-        marketing_status = generated_tweet[2] 
-        base_news_of_tweet = generated_tweet[1] 
-        generated_tweet = generated_tweet[0]
-        
-    if generated_tweet:
-        audio = eleven_labs_audio_generation(generated_tweet, eleven_labs_api_key)
+        if generated_tweet:
+            marketing_status = generated_tweet[2] 
+            base_news_of_tweet = generated_tweet[1] 
+            generated_tweet = generated_tweet[0]
+            
+            audio = eleven_labs_audio_generation(generated_tweet, eleven_labs_api_key)
         
     if audio:
         complete_video = make_video_complete()
