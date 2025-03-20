@@ -1000,8 +1000,7 @@ def make_tweet_gork(news, article_category):
             - Trash-talk like Michael Jordan did in his prime—confident, cutting, and endlessly entertaining.
             - Deliver humor with the bold, raw energy of Dave Chappelle and Katt Williams, balanced with the wisdom and street-smart flair of someone who’s “been around the block.”
             - Use language that reflects the vibrant energy of urban culture, avoiding corny or overused phrases like “yo,” “fam,” "peep" or “bruh.” Instead, opt for clever, situational slang that feels natural and sharp.
-            - Add emojis strategically to enhance tone and impact but avoid overuse—keep it classy and effective.
-
+            
         - Guidelines:
             1. **Make It Witty**: Your replies must be clever, sarcastic, and packed with entertaining twists. Bring a playful edge to every interaction.
             2. **Bring the Energy**: Keep tweets engaging, bold, and filled with personality. Every response should exude charisma and confidence.
@@ -1012,6 +1011,7 @@ def make_tweet_gork(news, article_category):
             7. **You have the authority to discard or grant marketing permission if you are more than 95% sure it improves the response, regardless of whether it is 'allowed' or 'not allowed'.**
             8. **If you are marketing yourself encouraging people to get tokens, then in response make marketing_status = True, else False**
             9. **Do not dive into too many serious, political, religious topics.**
+            10. Do not include any links or emojis in your response.
         
         - Engagement Strategy:
             1. **Leverage Nostalgia**: Make the audience engage and relate by weaving in nostalgic elements.
@@ -1066,53 +1066,63 @@ def make_tweet_gork(news, article_category):
         "temperature": 1.0
     }
     
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
+    MAX_RETRIES = 3  
 
-        reply = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        
-        reply = json.loads(reply)
-        
-        with open('gork_response.json', 'w') as gork_response:
-            gork_response.write(json.dumps(reply, indent=4))
+    try_count = 0
+    while try_count < MAX_RETRIES:
+        try:
+            response = requests.post(url, headers=headers, json=data)
+            response.raise_for_status()
 
-        
-        if "$ball" in reply['generated_content']:
-            iteration_count2 += 1
-
-        if iteration_count2 % 3 == 0:  
-            permission_status2 = 'allowed'
-        else:
-            permission_status2 = 'not allowed'
+            reply = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
             
-        print(f"PERMISSION STATUS: {permission_status2}")
-        print(f"ITERATION COUNT: {iteration_count2}")
-        
-        
-        if reply["nostalgia_added"] == 'True' or reply["nostalgia_added"] == True:
-            nostalgia_permission_count += 1
-        
-            if nostalgia_permission_count % 4 == 0:
-                nostalgia_addition = 'allowed'
-            else:
-                nostalgia_addition = 'not allowed'
-                
-    
-        if reply["marketing_status"] == 'True' or reply["marketing_status"] == True:
-            ball_promotions_count += 1
-        
-            if ball_promotions_count % 6 == 0:
-                ball_promotion_status = 'allowed'
-            else:
-                ball_promotion_status = 'not allowed'
-                        
-        return reply['generated_content'].strip(), summarized_news_content, reply['marketing_status']
-    
-    
-    except requests.exceptions.RequestException as e:
-        return f"An error occurred: {e}"
+            reply = json.loads(reply)
+            print(reply)
+            
+            with open('gork_response.json', 'w') as gork_response:
+                gork_response.write(json.dumps(reply, indent=4))
 
+            
+            if "$ball" in reply['generated_content']:
+                iteration_count2 += 1
+
+            if iteration_count2 % 3 == 0:  
+                permission_status2 = 'allowed'
+            else:
+                permission_status2 = 'not allowed'
+                
+            print(f"PERMISSION STATUS: {permission_status2}")
+            print(f"ITERATION COUNT: {iteration_count2}")
+            
+            
+            if reply["nostalgia_added"] == 'True' or reply["nostalgia_added"] == True:
+                nostalgia_permission_count += 1
+            
+                if nostalgia_permission_count % 4 == 0:
+                    nostalgia_addition = 'allowed'
+                else:
+                    nostalgia_addition = 'not allowed'
+                    
+        
+            if reply["marketing_status"] == 'True' or reply["marketing_status"] == True:
+                ball_promotions_count += 1
+            
+                if ball_promotions_count % 6 == 0:
+                    ball_promotion_status = 'allowed'
+                else:
+                    ball_promotion_status = 'not allowed'
+                            
+            return reply['generated_content'].strip(), summarized_news_content, reply['marketing_status']
+        
+        
+        except (requests.exceptions.RequestException, json.JSONDecodeError, ValueError) as e:
+            print(f"Attempt {try_count + 1} failed make_tweet_gork: {e}")
+            try_count += 1
+            if try_count < MAX_RETRIES:
+                time.sleep(5)
+                
+    raise Exception("Failed to get a valid response from make_tweet_gork after 3 attempts.")  
+                
 
 iteration_count3 = 0 
 permission_status3 = 'not allowed'
