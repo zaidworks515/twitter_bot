@@ -14,7 +14,7 @@ from PIL import ImageFont
 import math
 from config import whisper_model
 
-os.environ["PATH"] += os.pathsep + r"D:\Tessaract\Projects API\twitter bot\twitter_bot\video_generation\ffmpeg\bin"
+os.environ["PATH"] += os.pathsep + r"video_generation\ffmpeg\bin"
 
 def eleven_labs_audio_generation(generated_tweet, eleven_labs_api_key):
     clear_previous_data()
