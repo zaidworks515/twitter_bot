@@ -45,7 +45,8 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
     - **Purpose:** Generate captions that enhance video engagement and improve SEO discoverability.
         - Provide **context and insights** from the tweet and its news reference.
         - Expand details to make the video easier to understand.
-        - Optimize captions with **trending keywords** for better search visibility.
+        - Optimize captions with **trending keywords** for better search visibility, but do not mention them at the end explicitly.
+
 
     - **Tone & Style:**
         - **Concise but impactful**—engaging, informative, and sharp.
@@ -55,7 +56,7 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
         
         
     - **Marketing Strategy:**
-        - If marketing_status = True, then add the following links in the caption Links:  To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
+        - If marketing_status = True, then add the following links in the caption To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
         - Do not use any sort of hashtags in the caption. 
         
 
@@ -1011,17 +1012,21 @@ def make_tweet_gork(news, article_category):
             7. **You have the authority to discard or grant marketing permission if you are more than 95% sure it improves the response, regardless of whether it is 'allowed' or 'not allowed'.**
             8. **If you are marketing yourself encouraging people to get tokens, then in response make marketing_status = True, else False**
             9. **Do not dive into too many serious, political, religious topics.**
-            10. Do not include any links or emojis in your response.
+            10. **Do not include any links or emojis in your response.**
+            11. **Make posts detailed enough that people immediately understand them. If it’s referencing a sports moment, include key details so even casual fans can follow along.**
         
         - Engagement Strategy:
             1. **Leverage Nostalgia**: Make the audience engage and relate by weaving in nostalgic elements.
             2. Encourage discussion with:
-                - Historic facts
-                - ‘This or That’ style questions
                 - Nostalgia is: {nostalgia_addition}
                 - Use nostalgia like this: {nostalgia_example}.. but only if 'allowed'
-                - You have the authority to discard the nostalgia if you are more than 90% that it is not good for response even if it is 'allowed'.
-                - You have the authority to include nostalgia more than 90% sure that it is good for the response if it is 'not allowed'.
+                - You have the authority to include nostalgia if you are more than 90% sure that it is good for the response, even if it is 'not allowed'.
+                - You have the authority to discard nostalgia if you are more than 90% sure that it is good for the response, even if it is 'allowed'.
+            3. if you are 90% sure that it will improve the response, You can also include engaging, fun, conversational questions and facts from the following examples:
+                - 'Did you know' facts about legendary basketball moments, players, or sports history
+                - NBA Historic facts
+                - NBA ‘This or That’ style questions, for example: “Who’s the greatest point guard of all time and why?” or “Would you rather have Prime Shaq or Prime Duncan?”
+
 
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
@@ -1095,22 +1100,31 @@ def make_tweet_gork(news, article_category):
             print(f"ITERATION COUNT: {iteration_count2}")
             
             
-            if reply["nostalgia_added"] == 'True' or reply["nostalgia_added"] == True:
+            if reply["nostalgia_added"] == 'False' or reply["nostalgia_added"] == False:
                 nostalgia_permission_count += 1
             
                 if nostalgia_permission_count % 4 == 0:
                     nostalgia_addition = 'allowed'
                 else:
                     nostalgia_addition = 'not allowed'
+
+            if reply["nostalgia_added"] == 'True' or reply["nostalgia_added"] == True:
+                nostalgia_permission_count = 0
+
+            print(nostalgia_addition)
                     
         
-            if reply["marketing_status"] == 'True' or reply["marketing_status"] == True:
+            if reply["marketing_status"] == 'False' or reply["marketing_status"] == False:
                 ball_promotions_count += 1
             
-                if ball_promotions_count % 6 == 0:
+                if ball_promotions_count % 5 == 0:
                     ball_promotion_status = 'allowed'
+
                 else:
                     ball_promotion_status = 'not allowed'
+
+            elif reply["marketing_status"] == 'True' or reply["marketing_status"] == True:
+                ball_promotions_count = 0
                             
             return reply['generated_content'].strip(), summarized_news_content, reply['marketing_status']
         
@@ -1122,7 +1136,7 @@ def make_tweet_gork(news, article_category):
                 time.sleep(5)
                 
     raise Exception("Failed to get a valid response from make_tweet_gork after 3 attempts.")  
-                
+
 
 iteration_count3 = 0 
 permission_status3 = 'not allowed'

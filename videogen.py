@@ -14,8 +14,7 @@ from PIL import ImageFont
 import math
 from config import whisper_model
 
-
-# os.environ["PATH"] += os.pathsep + r"D:\projects\tesseract\trial\twitter_bot\video_generation\ffmpeg\bin"
+# os.environ["PATH"] += os.pathsep + r"D:\Tessaract\Projects API\twitter bot\twitter_bot\video_generation\ffmpeg\bin"
 
 def eleven_labs_audio_generation(generated_tweet, eleven_labs_api_key):
     clear_previous_data()
@@ -213,10 +212,10 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
                 start_time += chunk_duration  
 
         font_path = "./video_generation/font/neue_pixel_sans/NeuePixelSans.ttf"
-        font_size = 55
+        font_size = 67
         font = ImageFont.truetype(font_path, font_size)
 
-        left_right_margin = 40
+        left_right_margin = 10
         bottom_margin = 40
         max_text_width = frame_width - (2 * left_right_margin)
 
@@ -242,7 +241,7 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
         return lines
 
     def draw_text(frame, text):
-        img_pil = Image.fromarray(frame)
+        img_pil = Image.fromarray(frame).convert("RGB")
         draw = ImageDraw.Draw(img_pil)
 
         wrapped_lines = wrap_text(text, font, max_text_width)
@@ -256,7 +255,7 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
             text_width = font.getbbox(line)[2] - font.getbbox(line)[0]
             text_x = max(left_right_margin, (frame_width - text_width) // 2)  # Center horizontally
 
-            draw.text((text_x + shadow_offset, text_y + shadow_offset), line, font=font, fill=(0, 0, 0))
+            draw.text((text_x + shadow_offset, text_y + shadow_offset), line, font=font, fill=(50,50,50))
 
             for dx in range(-bold_offset, bold_offset + 1):
                 for dy in range(-bold_offset, bold_offset + 1):
@@ -296,4 +295,5 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
         
     if music_vid:
         return True
+
 
