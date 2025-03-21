@@ -14,7 +14,7 @@ from PIL import ImageFont
 import math
 from config import whisper_model
 
-# os.environ["PATH"] += os.pathsep + r"D:\Tessaract\Projects API\twitter bot\twitter_bot\video_generation\ffmpeg\bin"
+os.environ["PATH"] += os.pathsep + r"D:\Tessaract\Projects API\twitter bot\twitter_bot\video_generation\ffmpeg\bin"
 
 def eleven_labs_audio_generation(generated_tweet, eleven_labs_api_key):
     clear_previous_data()
@@ -240,14 +240,49 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
 
         return lines
 
-    def draw_text(frame, text):
+    # def draw_text(frame, text):
+    #     img_pil = Image.fromarray(frame).convert("RGB")
+    #     draw = ImageDraw.Draw(img_pil)
+
+    #     wrapped_lines = wrap_text(text, font, max_text_width)
+        
+    #     # Use consistent line height to avoid jittering
+    #     line_height = font.getbbox("A")[3] - font.getbbox("A")[1]  # Fixed height
+    #     total_text_height = len(wrapped_lines) * line_height
+        
+    #     text_y = frame_height - bottom_margin - total_text_height
+    #     shadow_offset = 3
+    #     bold_offset = 0
+
+    #     for line in wrapped_lines:
+    #         text_width = font.getbbox(line)[2] - font.getbbox(line)[0]
+    #         text_x = max(left_right_margin, (frame_width - text_width) // 2)  # Center horizontally
+
+    #         # Shadow effect
+    #         draw.text((text_x + shadow_offset, text_y + shadow_offset), line, font=font, fill=(50,50,50))
+
+    #         # Bold effect
+    #         for dx in range(-bold_offset, bold_offset + 1):
+    #             for dy in range(-bold_offset, bold_offset + 1):
+    #                 draw.text((text_x + dx, text_y + dy), line, font=font, fill=(255, 255, 255))
+
+    #         text_y += line_height  # Use fixed line height
+
+    #     return np.array(img_pil)
+    
+    def draw_text(frame, text, clear_frame=True):
+        if clear_frame:
+            frame = frame.copy()  
+
         img_pil = Image.fromarray(frame).convert("RGB")
         draw = ImageDraw.Draw(img_pil)
 
         wrapped_lines = wrap_text(text, font, max_text_width)
-        total_text_height = sum(font.getbbox(line)[3] - font.getbbox(line)[1] for line in wrapped_lines)
+        
+        line_height = font.getbbox("A")[3] - font.getbbox("A")[1]
+        total_text_height = len(wrapped_lines) * line_height
+        
         text_y = frame_height - bottom_margin - total_text_height
-
         shadow_offset = 3
         bold_offset = 0
 
@@ -261,11 +296,11 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
                 for dy in range(-bold_offset, bold_offset + 1):
                     draw.text((text_x + dx, text_y + dy), line, font=font, fill=(255, 255, 255))
 
-            text_y += font.getbbox(line)[3] - font.getbbox(line)[1]
+            text_y += line_height  
 
         return np.array(img_pil)
-    
 
+    
     frames = []
     for i, frame in enumerate(video.iter_frames(fps=fps, dtype="uint8")):
         timestamp = i / fps
