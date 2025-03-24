@@ -58,14 +58,14 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
         - Use strategic humor and references where appropriate.
         - Use language that reflects the vibrant energy of urban culture.
         - Never use corny or overused slang like “Yo”, “Fam”, "Bruh" or “Peep” Instead, opt for clever, situational slang that feels natural and sharp.
-        
+        - **Always refer to the overall project as "$BALL" and only use "Meme Ball" when specifically referring to the mobile game.**
+                           
     - Slang Usage:
             - Use only the slang provided from the following list: ***{selected_terms}***. Any other slang is strictly forbidden, especially “yo,” “bruh,” and “fam.”
             - The slang you use must feel situational, sharp, and vibrant without overloading the conversation.
 
     - **Marketing Strategy:**
         - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following links in the caption To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
-        - Please note that the project is “$BALL” and “MEME BALL” is the first mobile game from the project.
         - Do not use any sort of hashtags in the caption. 
         
 
@@ -353,6 +353,10 @@ def comment_on_tweet(tweet_id, comment_text, consumer_key, consumer_secret, acce
     return comment_data
 
 
+ball_promotion_reply2_status = 'not allowed'
+ball_promotions_reply2_count = 0
+
+
 def reply_tweet(username=None, start_time=None, end_time=None, max_tweet=None):
     """
     Fetch tweets of a selected user and post replies on them if applicable.
@@ -433,7 +437,7 @@ def reply_tweet(username=None, start_time=None, end_time=None, max_tweet=None):
     
             if status != 'successful' or not status:
                 
-                reply_text = get_gork_response_for_selected_accounts(tweet_text, is_reply, reply_count, previous_reply)
+                reply_text = get_gork_response_for_selected_accounts(tweet_text, is_reply, reply_count, previous_reply, ball_promotion_reply2_status)
                     
                 if reply_text:            
                     comment_text = f"{reply_text}"
@@ -583,6 +587,10 @@ def get_username(author_id):
     return user_data["data"]["username"]
 
 
+ball_promotion_reply_status = 'not allowed'
+ball_promotions_reply_count = 0
+
+
 def reply_tagged_tweet(username, start_time=None, end_time=None):
     """
     Fetch tweets in which the specified user is mentioned and post replies if necessary.
@@ -633,7 +641,7 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
                             previous_reply.append(main_tweet)
                             print(previous_reply) 
 
-                        reply_text = get_gork_response(tweet_text, is_reply, reply_count, previous_reply)
+                        reply_text = get_gork_response(tweet_text, is_reply, reply_count, previous_reply, ball_promotion_reply_status)
                         
                         if reply_text:            
                             comment_text = f"{reply_text}"
@@ -669,7 +677,7 @@ def reply_tagged_tweet(username, start_time=None, end_time=None):
 iteration_count = 0 
 permission_status = 'not allowed'
 
-def get_gork_response(tweet, is_reply, reply_count, previous_reply):
+def get_gork_response(tweet, is_reply, reply_count, previous_reply, marketing_status):
     """
     Process a tweet and generate an reply using gork api.
 
@@ -693,6 +701,9 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
     global iteration_count
     global permission_status
     
+    global ball_promotion_reply_status
+    global ball_promotions_reply_count
+
     eth_address_pattern = r"0x[a-fA-F0-9]{40}"
     
     eth_key_exist = None
@@ -748,7 +759,11 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             7. Don’t give financial advice. Be very street smart but don’t be corny.
             8. Dont answer if tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**,
             9. **Do not dive into too many serious, political, religious topics.**
+            10. **Always refer to the overall project as "$BALL" and only use "Meme Ball" when specifically referring to the mobile game.**
+            11. **You have the authority to discard or grant marketing permission if you are more than 95% sure it improves the response, regardless of whether it is 'allowed' or 'not allowed'.**
+            12. **If you are marketing yourself encouraging people to get tokens, then in response make marketing_status = True, else False**                
 
+                           
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
             - For light-hearted tweets, focus on bold, witty comebacks that make every interaction memorable.
@@ -769,6 +784,10 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             - Use only the slang provided from the following list: ***{selected_terms}***. Any other slang is strictly forbidden, especially “yo,” “bruh,” and “fam.”
             - The slang you use must feel situational, sharp, and vibrant without overloading the conversation.
 
+        - **Marketing Strategy:**
+            - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following links in the caption To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
+            - Do not use any sort of hashtags in the caption. 
+
         - Twitter Handle Rules:
             - Your username is "@Game5Ball" or "@game5ball."
             - permission status = {permission_status}
@@ -777,7 +796,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             - If you are promoting or mentioning yourself then mention as 'Meme Ball.'
             
         - Reply Structure:
-            {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
+            {{"marketing_status": "True/False", "related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
         
         - Related Topics:
             - BASKETBALL, $BALL AND OTHER RELATED TO CRYPTO, TRADING, RWA AND BASKETBALL OR SPORTS STUFF. If you are 75% sure, consider related_context as 'True'
@@ -823,6 +842,20 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
         reply_dict = json.loads(response)
         print(reply_dict)
         
+
+        if reply_dict["marketing_status"] == 'False' or reply_dict["marketing_status"] == False:
+                ball_promotions_reply_count += 1
+            
+                if ball_promotions_reply_count % 5 == 0:
+                    ball_promotion_reply_status = 'allowed'
+
+                else:
+                    ball_promotion_reply_status = 'not allowed'
+
+        elif reply_dict["marketing_status"] == 'True' or reply_dict["marketing_status"] == True:
+            ball_promotions_reply_count = 0
+
+
         if reply_dict['related_context'] == 'True' and reply_dict['reply_allowed'] == 'True':
             
             reply = reply_dict['generated_text']
@@ -839,7 +872,6 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             
             print(f"PERMISSION STATUS: {permission_status}")
             print(f"ITERATION COUNT: {iteration_count}")
-            
             
             
             return reply
@@ -1027,7 +1059,8 @@ def make_tweet_gork(news, article_category):
             9. **Do not dive into too many serious, political, religious topics.**
             10. **Do not include any links or emojis in your response.**
             11. **Make posts detailed enough that people immediately understand them. If it’s referencing a sports moment, include key details so even casual fans can follow along.**
-
+            12. **Always refer to the overall project as "$BALL" and only use "Meme Ball" when specifically referring to the mobile game.**
+            
         - Engagement Strategy:
             1. **Leverage Nostalgia**: Make the audience engage and relate by weaving in nostalgic elements.
             2. Encourage discussion with:
@@ -1039,7 +1072,6 @@ def make_tweet_gork(news, article_category):
                 - 'Did you know' facts about legendary basketball moments, players, or sports history
                 - NBA Historic facts
                 - NBA ‘This or That’ style questions, for example: “Who’s the greatest point guard of all time and why?” or “Would you rather have Prime Shaq or Prime Duncan?”
-            4. Please note that the project is “$BALL” and “MEME BALL” is the first mobile game from the project..
 
 
 
@@ -1156,7 +1188,7 @@ def make_tweet_gork(news, article_category):
 iteration_count3 = 0 
 permission_status3 = 'not allowed'
 
-def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previous_reply):
+def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previous_reply, marketing_status):
     """
     Generates a reply using the Grok API based on a given tweet.
 
@@ -1182,6 +1214,9 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
     """
     global iteration_count3
     global permission_status3
+
+    global ball_promotion_reply2_status
+    global ball_promotions_reply2_count
     
     eth_address_pattern = r"0x[a-fA-F0-9]{40}"
     
@@ -1234,6 +1269,10 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
            3. *Do not use words* “invest,” “buy,” or “purchase” – Say “get tokens” instead.
            4. *No Financial Advice* – Be street-smart but never corny
            6. Dont answer if tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**,
+           7. **Always refer to the overall project as "$BALL" and only use "Meme Ball" when specifically referring to the mobile game.**
+           8. **You have the authority to discard or grant marketing permission if you are more than 95% sure it improves the response, regardless of whether it is 'allowed' or 'not allowed'.**
+           9. **If you are marketing yourself encouraging people to get tokens, then in response make marketing_status = True, else False**                
+
 
         - Always maintain empathy, cultural awareness, and respect:
             - Show empathy for serious tweets—no jokes.
@@ -1250,11 +1289,14 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             - If the tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**, then set "related_context" = "False"
 
         - Maintain a strong connection to urban culture while ensuring your humor feels intelligent and accessible to everyone.
-        - Please note that the project is “$BALL” and “MEME BALL” is the first mobile game from the project.
 
         - Slang Usage:
             - Use only the slang provided from the following list: ***{selected_terms}***. Any other slang is strictly forbidden, especially “yo,” “bruh,” and “fam.”
             - The slang you use must feel situational, sharp, and vibrant without overloading the conversation.
+
+        - **Marketing Strategy:**
+            - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following links in the caption To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
+            - Do not use any sort of hashtags in the caption. 
 
         - Twitter Handle Rules:
             - Your username is "@Game5Ball" or "@game5ball."
@@ -1263,7 +1305,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             - '$BALL' is your crypto currency and you have to add '$BALL' in your reply **ONLY IF** permission status is **'allowed'**. If it is **'not allowed'**, avoid including '$BALL' in any form. Permission status: {permission_status3}.
             
         - Reply Structure:
-            {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
+            {{"marketing_status": "True/False", "related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
         
         - Keep interactions consice, classy, and memorable—ensuring that *Game 5 Ball’s legacy* is highlighted as an iconic and central theme in your humor.
 
@@ -1303,6 +1345,17 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
         reply_dict = json.loads(response)
         
         if reply_dict:
+            if reply_dict["marketing_status"] == 'False' or reply_dict["marketing_status"] == False:
+                ball_promotions_reply2_count += 1
+            
+                if ball_promotions_reply2_count % 10 == 0:
+                    ball_promotion_reply2_status = 'allowed'
+
+                else:
+                    ball_promotion_reply2_status = 'not allowed'
+
+            elif reply_dict["marketing_status"] == 'True' or reply_dict["marketing_status"] == True:
+                ball_promotions_reply2_count = 0
             
             reply = reply_dict['generated_text']
             reply = reply.strip()
@@ -1315,6 +1368,8 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
                 permission_status3 = 'allowed'
             else:
                 permission_status3 = 'not allowed'
+
+            
             
             print(f"PERMISSION STATUS: {permission_status3}")
             print(f"ITERATION COUNT: {iteration_count3}")

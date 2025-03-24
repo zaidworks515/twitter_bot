@@ -213,11 +213,11 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
                 start_time += chunk_duration  
 
         font_path = "./video_generation/font/neue_pixel_sans/NeuePixelSans.ttf"
-        font_size = 67
+        font_size = 65
         font = ImageFont.truetype(font_path, font_size)
 
         left_right_margin = 10
-        bottom_margin = 40
+        bottom_margin = 50
         max_text_width = frame_width - (2 * left_right_margin)
 
     def wrap_text(text, font, max_width):
