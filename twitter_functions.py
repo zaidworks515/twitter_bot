@@ -15,6 +15,7 @@ import time
 #Global Var
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
+
 def video_caption(tweet, base_news_of_tweet, marketing_status):
     """
     Generate a caption based on the given tweet using the Grok API.
@@ -30,6 +31,9 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
        Generated tweet caption.
 
     """    
+
+    picker = SlangPicker()
+    selected_terms = picker.pick_random_slang()
 
 
     url = "https://api.x.ai/v1/chat/completions"
@@ -52,11 +56,16 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
         - **Concise but impactful**—engaging, informative, and sharp.
         - **Avoid vague or generic captions.** Add context that hooks the audience.
         - Use strategic humor and references where appropriate.
-        - Use language that reflects the vibrant energy of urban culture, avoiding corny or overused phrases like “yo,” “fam,” "bruh" or “peep” Instead, opt for clever, situational slang that feels natural and sharp.
+        - Use language that reflects the vibrant energy of urban culture.
+        - Never use corny or overused slang like “Yo”, “Fam”, "Bruh" or “Peep” Instead, opt for clever, situational slang that feels natural and sharp.
         
-        
+    - Slang Usage:
+            - Use only the slang provided from the following list: ***{selected_terms}***. Any other slang is strictly forbidden, especially “yo,” “bruh,” and “fam.”
+            - The slang you use must feel situational, sharp, and vibrant without overloading the conversation.
+
     - **Marketing Strategy:**
-        - If marketing_status = True, then add the following links in the caption To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
+        - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following links in the caption To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
+        - Please note that the project is “GAME 5 BALL” and “MEME BALL” is the first mobile game from the project.
         - Do not use any sort of hashtags in the caption. 
         
 
@@ -74,7 +83,6 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
                     f"""Generate a **highly engaging and SEO-optimized** video caption for the following tweet. 
                     The caption must add valuable context and insights based on the tweet and its related news.\n
                     **Tweet:** {tweet}\n
-                    **Marketing Status:** {marketing_status}\n
                     **News Context:** {base_news_of_tweet}\n\n
                     - Make sure the caption helps the audience grasp the full picture instantly.\n
                     - Include relevant **trending keywords** where appropriate.\n
@@ -94,11 +102,15 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
         caption = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
 
         # print(f"caption: {caption}")
+
+        for term in ["Yo ", "yo ", "Yo,", "yo,"]:
+            caption = caption.replace(term, "")
         
-        return caption
+        return caption.strip()
     
     except requests.exceptions.RequestException as e:
         return f"An error occurred: {e}"
+    
 
 
 def upload_video_to_twitter(caption, video_path='./video_generation/final_video_with_music.mp4', api_key=api_key, api_secret=api_secret, access_token=access_token, access_token_secret=access_token_secret, media_type="video/mp4", media_category="amplify_video"):
@@ -1014,7 +1026,7 @@ def make_tweet_gork(news, article_category):
             9. **Do not dive into too many serious, political, religious topics.**
             10. **Do not include any links or emojis in your response.**
             11. **Make posts detailed enough that people immediately understand them. If it’s referencing a sports moment, include key details so even casual fans can follow along.**
-        
+
         - Engagement Strategy:
             1. **Leverage Nostalgia**: Make the audience engage and relate by weaving in nostalgic elements.
             2. Encourage discussion with:
@@ -1026,6 +1038,8 @@ def make_tweet_gork(news, article_category):
                 - 'Did you know' facts about legendary basketball moments, players, or sports history
                 - NBA Historic facts
                 - NBA ‘This or That’ style questions, for example: “Who’s the greatest point guard of all time and why?” or “Would you rather have Prime Shaq or Prime Duncan?”
+            4. Please note that the project is “GAME 5 BALL” and “MEME BALL” is the first mobile game from the project.
+
 
 
         - Always maintain empathy, cultural awareness, and respect:
