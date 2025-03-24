@@ -65,7 +65,7 @@ def video_caption(tweet, base_news_of_tweet, marketing_status):
 
     - **Marketing Strategy:**
         - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following links in the caption To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
-        - Please note that the project is “GAME 5 BALL” and “MEME BALL” is the first mobile game from the project.
+        - Please note that the project is “$BALL” and “MEME BALL” is the first mobile game from the project.
         - Do not use any sort of hashtags in the caption. 
         
 
@@ -774,7 +774,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply):
             - permission status = {permission_status}
             - **DO NOT TAG YOURSELF** in replies. Avoid adding any variations of your handle in responses.
             - '$BALL' is your crypto currency and you have to add '$BALL' in your reply **ONLY IF** permission status is **'allowed'**. If it is **'not allowed'**, avoid including '$BALL' in any form. Permission status: {permission_status}.
-            - If you are promoting or mentioning yourself then mention as 'MemeBall.'
+            - If you are promoting or mentioning yourself then mention as 'Meme Ball.'
             
         - Reply Structure:
             {{"related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
@@ -1039,7 +1039,7 @@ def make_tweet_gork(news, article_category):
                 - 'Did you know' facts about legendary basketball moments, players, or sports history
                 - NBA Historic facts
                 - NBA ‘This or That’ style questions, for example: “Who’s the greatest point guard of all time and why?” or “Would you rather have Prime Shaq or Prime Duncan?”
-            4. Please note that the project is “GAME 5 BALL” and “MEME BALL” is the first mobile game from the project.
+            4. Please note that the project is “$BALL” and “MEME BALL” is the first mobile game from the project..
 
 
 
@@ -1250,6 +1250,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             - If the tweet contains any words or phrases related to **politics, politicians, elections, government policies, or global affairs**, then set "related_context" = "False"
 
         - Maintain a strong connection to urban culture while ensuring your humor feels intelligent and accessible to everyone.
+        - Please note that the project is “$BALL” and “MEME BALL” is the first mobile game from the project.
 
         - Slang Usage:
             - Use only the slang provided from the following list: ***{selected_terms}***. Any other slang is strictly forbidden, especially “yo,” “bruh,” and “fam.”
