@@ -5,6 +5,7 @@ from moviepy.editor import CompositeAudioClip
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.audio.fx.all import volumex  
 import os
+import time
 import random
 from elevenlabs.client import ElevenLabs
 import whisper
@@ -14,6 +15,7 @@ from PIL import ImageFont
 import math
 from config import whisper_model
 from video_smooth import increase_fps
+
 
 os.environ["PATH"] += os.pathsep + r"video_generation\ffmpeg\bin"
 
@@ -330,6 +332,7 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
         music_vid = add_background_music(output_video_path, music_path, output_path)
 
         if music_vid:
+            time.sleep(3)
         
             input_video = "./video_generation/final_video_with_music.mp4"
             output_video = "./video_generation/final_video_with_music.mp4"
