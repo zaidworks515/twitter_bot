@@ -270,6 +270,7 @@ def post_tweet():
     if audio:
         complete_video = make_video_complete()
         if complete_video:
+            
             try:
                 caption = video_caption(generated_tweet, base_news_of_tweet, marketing_status)
                 tweet_response = upload_video_to_twitter(caption)

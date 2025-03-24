@@ -13,6 +13,7 @@ import cv2
 from PIL import ImageFont
 import math
 from config import whisper_model
+from video_smooth import increase_fps
 
 os.environ["PATH"] += os.pathsep + r"video_generation\ffmpeg\bin"
 
@@ -327,8 +328,17 @@ def make_video_complete(video_dir='./video_generation/video_templates'):
         output_path =  "./video_generation/final_video_with_music.mp4"
 
         music_vid = add_background_music(output_video_path, music_path, output_path)
+
+        if music_vid:
         
-    if music_vid:
+            input_video = "./video_generation/final_video_with_music.mp4"
+            output_video = "./video_generation/final_video_with_music.mp4"
+            fps = 60
+
+            smoothed_video = increase_fps(input_video, output_video, fps)
+            # RECOMMENDED TO REMOVE THE SMOOTHNESS LOGIC IF USING GPU. DON'T FORGET TO ENABLE GPU USAGE WITH FFMPEG & WHISPER
+            
+    if smoothed_video:
         return True
 
 
