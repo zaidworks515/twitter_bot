@@ -785,7 +785,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply, marketing_st
             - The slang you use must feel situational, sharp, and vibrant without overloading the conversation.
 
         - **Marketing Strategy:**
-            - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following links in the caption To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
+            - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following link in the caption To get tokens: www.Game5Ball.com, you can also add the Meme ball game link if suitable: www.memeball.ai
             - Do not use any sort of hashtags in the caption. 
 
         - Twitter Handle Rules:
@@ -1295,7 +1295,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
             - The slang you use must feel situational, sharp, and vibrant without overloading the conversation.
 
         - **Marketing Strategy:**
-            - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following links in the caption To get tokens: www.Game5Ball.com, Meme ball game: www.memeball.ai
+            - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following link in the caption To get tokens: www.Game5Ball.com, you can also add Meme ball game link if suitable: www.memeball.ai
             - Do not use any sort of hashtags in the caption. 
 
         - Twitter Handle Rules:
