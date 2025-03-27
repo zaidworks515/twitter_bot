@@ -786,7 +786,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply, marketing_st
 
         - **Marketing Strategy:**
             - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following link in the caption To get tokens: www.Game5Ball.com.
-            - If the tweet mentions a game, match, or any gameplay-related topic, also add the Meme Ball game link: "www.memeball.ai".
+            - Only If the tweet mentions a game, match, or any gameplay-related topic, you can add the Meme Ball game link: "www.memeball.ai".
             - Do not use any sort of hashtags in the caption. 
 
         - Twitter Handle Rules:
@@ -1297,7 +1297,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
 
         - **Marketing Strategy:**
             - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following link in the caption To get tokens: www.Game5Ball.com.
-            - If the tweet mentions a game, match, or any gameplay-related topic, also add the Meme Ball game link: "www.memeball.ai".
+            - Only If the tweet mentions a game, match, or any gameplay-related topic, you can add the Meme Ball game link: "www.memeball.ai".
             - Do not use any sort of hashtags in the caption. 
 
         - Twitter Handle Rules:
