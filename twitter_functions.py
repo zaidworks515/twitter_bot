@@ -1137,6 +1137,9 @@ def make_tweet_gork(news, article_category):
 
             
             if "$ball" in reply['generated_content']:
+                iteration_count2 = 0
+            
+            else:
                 iteration_count2 += 1
 
             if iteration_count2 % 3 == 0:  
