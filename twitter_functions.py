@@ -203,10 +203,6 @@ def post_tweet():
     Fetches a news article based on the given category, checks for similar recent tweets,  
     and posts a new tweet if no similar one exists.
 
-    Parameters
-    ----------
-    tweet_category : str, optional
-        The category of news to fetch and tweet about. If None, no category filter is applied.
 
     Returns
     -------
@@ -224,8 +220,8 @@ def post_tweet():
     article = None
 
     if data:
-        article = data[0]
-        article_category = data[1]
+        article = data
+        article_category = data['category']
 
     if not article:
         print("No articles found for the given category.")
@@ -237,9 +233,10 @@ def post_tweet():
 
     tweets = check_tweets(last_tweet_category, from_date, to_date)
 
-    fetched_title = article[0]['title']
-    fetched_description = article[0]['description']
+    fetched_title = article['title']
+    fetched_description = article['description']
     embedding_a = model.encode(fetched_title, convert_to_tensor=True)
+
 
     if tweets:
         for tweet in tweets:
@@ -882,56 +879,167 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply, marketing_st
         print(f"An error occurred: {e}")
 
 
-def get_news(last_category):
+
+def category_filter(news, category, grok_api_key):
     """
-    Fetches a news article based on the given category.  
+    Selects the most engaging news article based on predefined criteria.
 
     Parameters
     ----------
-    last_category : str, required
-        The category of news which was last available.
+    news : list
+        List of news articles.
+
+    grok_api_key : str
+        API key for the Grok API.
 
     Returns
     -------
-    news article data, used category.
-    None
-        If no latest article is found.
-    
+    str
+       Selected news article title.
     """
+
+    url = "https://api.x.ai/v1/chat/completions"
     
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {grok_api_key}"
+    }
+    
+    system_instructions = (f"""
+        ### USE CASE DEFINITION  
+        We are curating **top-tier, high-engagement content** for Game 5 Ball’s audience. Our goal is to **select a news story** that maximizes engagement, aligns with basketball culture, and fits our brand.  
+
+        ### **SELECTION CRITERIA**  
+        From the given list of news articles, **choose one** that meets the following criteria:  
+
+        1. **Basketball Priority:**  
+        - Prefer news directly related to basketball (NBA, NCAA, international leagues, legendary players, major events, viral moments).  
+        - If no basketball-related news is present, select a general sports article.  
+
+        2. **Engagement Potential:**  
+        - Select a story that **drives conversation** (GOAT debates, game-winning shots, legendary moments, viral plays).  
+        - Avoid overly technical or dry stories that don’t spark engagement.  
+
+        3. **Cultural & Nostalgic Impact:**  
+        - If possible, choose a news story that allows us to reference legendary basketball moments, iconic players, or broader sports history.  
+        - Prefer articles that evoke strong emotions—**hype, nostalgia, humor, or passion**.  
+
+        4. **Avoid Overly Serious or Tragic Stories:**  
+        - Skip articles that are too sensitive or tragic unless they are essential to the sports world.  
+        - If a serious topic must be selected, it should allow for an empathetic yet engaging response.  
+        
+        5. **Debatable Topic Flag:**  
+        - For the selected news story, determine if it can **start a debate or conversation**.  
+        - If the news leads to a meaningful debate or allows for deeper discussion, mark it as **True**. Otherwise, mark it as **False**.
+        - The **debatable flag should only be True if the news is related to sports**. 
+        
+        ### **OUTPUT FORMAT**  
+        Your response must be in **JSON format** with these fields of the selected news:  
+
+         {{
+            "title": "Chosen article title",
+            "description": "description of the selected news article",
+            "content": "Full content of the news",
+            "category": {category}
+            "url": "News source link",
+            "image": "Thumbnail or featured image URL",
+            "publishedAt": "Date of publication",
+            "source": "Source name",
+            "debatable": "True/False"
+        }}
+
+    """)
+
+    data = {
+        "messages": [
+            {
+                "role": "system",
+                "content": system_instructions
+            },
+            {
+                "role": "user",
+                "content": f"Select a news article from the following list that best fits the criteria: {news}."
+            }
+        ],
+        "model": "grok-2",
+        "stream": False,
+        "temperature": 0.2
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+
+        clean_result = re.sub(r"^```json\s*|```$", "", result.strip())
+
+        return json.loads(clean_result)
+    
+    except requests.exceptions.RequestException as e:
+        return f"An error occurred: {e}"
+
+
+def get_news(last_category):
+    """
+    Fetches news articles based on the given category and its subcategories.
+
+    Parameters
+    ----------
+    last_category : str
+        The category of news that was last available.
+    
+
+    Returns
+    -------
+    dict
+        JSON object containing the selected news article.
+
+    None
+        If no relevant article is found.
+    """
+
+    selected_news_title = None
+    if os.path.exists("news_data.txt"):
+        os.remove("news_data.txt")
+        print("Deleted existing news_data.txt file.")
+
     categories = [
-    'Artificial Intelligence', 'AI', 
-    'top sports news', 'Sports Updates', 'Latest Sports', 'Sports Headlines',
-    'Basketball', 'NBA', 'Basketball News', 'basketball culture', 
-    'crypto', 'cryptocurrency', 'blockchain', 'crypto market', 
-    'tech', 'technology', 'tech trends', 'web3'
+        {"NBA": ["NBA", "NBA Playoffs", "NBA Finals", "NBA Drama", "NBA Championship"]},
+        {"AI": ["Artificial Intelligence", "AI"]},
+        {"Sports": ["top sports news", "Sports Updates", "Latest Sports", "Sports Headlines"]},
+        {"Basketball": ["Basketball", "Basketball News", "basketball culture"]},
+        {"Crypto": ["crypto", "cryptocurrency", "blockchain", "crypto market"]},
+        {"Tech": ["technology", "web3"]}
     ]
-    
+
     max_attempts = len(categories)
 
+    last_index = next((i for i, cat in enumerate(categories) if last_category in cat), -1)
+    index = (last_index + 1) % max_attempts if last_index != -1 else 0
 
-    last_index = next(i for i, cat in enumerate(categories) if cat == last_category)
-    if last_index != (max_attempts - 1):
-        index = last_index + 1
-    else:
-        index = 0
-        
     def log_error(status_code, error_text):
+        """Logs API errors to a file."""
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_entry = f"error code: {status_code}\nerror text: {error_text}\ncurrent time: {current_time}\n================\n"
-        
+        log_entry = f"Error Code: {status_code}\nError: {error_text}\nTime: {current_time}\n================\n"
         with open("get_news_error.txt", "a") as file:
-            file.write(log_entry)  # Append to the file
+            file.write(log_entry)
 
     for _ in range(max_attempts):
-        query = categories[index]
-        print(f"FETCHING NEWS FOR:: {query}")
-        url = f"https://gnews.io/api/v4/search?q={query.replace(' ', '%20')}&lang=en&country=us&max=1&apikey={news_api}"
+        category_dict = categories[index]
+        category_name, subcategories = list(category_dict.items())[0]
 
-        try:
-            response = requests.get(url)
+        news_data = []
+        print(f"\nFETCHING NEWS FOR CATEGORY: {category_name}")
 
-            if response.status_code == 200:
+        for subcategory in subcategories:
+            print(f"  Searching for: {subcategory}")
+            query = subcategory.replace(" ", "%20")
+            url = f"https://gnews.io/api/v4/search?q={query}&lang=en&country=us&max=1&apikey={news_api}"
+
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+
                 data = response.json()
                 articles = data.get("articles", [])
 
@@ -939,29 +1047,31 @@ def get_news(last_category):
                     published_at = articles[0]['publishedAt']
                     article_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ')
 
-                    today = datetime.now()
-                    yesterday = today - timedelta(days=1)
+                    if article_date >= datetime.now() - timedelta(days=2):
+                        print(f"  Article found: '{articles[0]['title']}'")
+                        news_data.extend(articles)
 
-                    if article_date >= yesterday:
-                        return articles, query
-                    else:
-                        time.sleep(30)
-                        pass
-                        
-            else:
-                print(f"Failed to fetch news for {query}. Status code: {response.status_code}") 
-                print(f"Response content: {response.text}") 
-                log_error(response.status_code, response.text)  # Log the error into the file
-                time.sleep(300)
-                    
+            except requests.exceptions.RequestException as e:
+                print(f"  Error fetching {subcategory}: {e}")
+                log_error(response.status_code if response else "N/A", str(e))
+                time.sleep(5)
 
-            index = (index + 1) % len(categories)
+            time.sleep(2)
 
-        except requests.exceptions.RequestException as e:
-            print(f"RequestException: {e}")
-            return None
+        if news_data:
+            with open("news_data.txt", "a", encoding="utf-8") as file:
+                for article in news_data:
+                    file.write(json.dumps(article, ensure_ascii=False) + "\n")
 
-    print("No recent articles found in any category.")
+        if news_data:
+            print(news_data)
+            selected_news_title = category_filter(news_data, category_name, gork_api_key)
+            print(selected_news_title)
+            return selected_news_title
+            
+
+        index = (index + 1) % max_attempts  
+
     return None
 
 
@@ -1000,11 +1110,12 @@ def make_tweet_gork(news, article_category):
     global nostalgia_permission_count
     
 
-    title = news[0]['title']
-    description = news[0]['description']
-    content = news[0]['content']
-    
-    tech_categories = ['Artificial Intelligence', 'AI', 'tech', 'web3', 'technology', 'tech trends']
+    title = news['title']
+    description = news['description']
+    content = news['content']
+    debatable = news['debatable']
+
+    tech_categories = ['Artificial Intelligence', 'AI','web3', 'technology',]
     sports_categories = ['top sports news', 'Sports Updates', 'Latest Sports',
                          'Sports Headlines', 'Basketball', 'NBA', 
                          'Basketball News', 'basketball culture',]
@@ -1024,7 +1135,7 @@ def make_tweet_gork(news, article_category):
     
     # print(title, description)
     
-    summarized_news_content = f"Title: {title}\nDescription: {description}\nContent: {content}"
+    summarized_news_content = f"Title: {title}\nDescription: {description}\nContent: {content}\nDebatable_status: {debatable}"
 
     picker = SlangPicker()
     selected_terms = picker.pick_random_slang()
@@ -1061,6 +1172,11 @@ def make_tweet_gork(news, article_category):
             10. **Do not include any links or emojis in your response.**
             11. **Make posts detailed enough that people immediately understand them. If it’s referencing a sports moment, include key details so even casual fans can follow along.**
             12. **Always refer to the overall project as "$BALL" and only use "Meme Ball" when specifically referring to the mobile game.**
+            13. You can also Explicitly mention the Game 5 Ball’s status as the “Holy Grail” and “Mona Lisa” of sports collectibles.
+            14. Only occasionally include tech analogies if strongly tied to basketball or elite sports history.
+            15. Do NOT target or negatively reference Elon Musk, Donald Trump, or similarly controversial figures.
+            16. Reference the historical significance of the 1991 Chicago Bulls Championship, Michael Jordan, Scottie Pippen, Magic Johnson, and iconic sports culture moments.
+
             
         - Engagement Strategy:
             1. **Leverage Nostalgia**: Make the audience engage and relate by weaving in nostalgic elements.
@@ -1069,12 +1185,12 @@ def make_tweet_gork(news, article_category):
                 - Use nostalgia like this: {nostalgia_example}.. but only if 'allowed'
                 - You have the authority to include nostalgia if you are more than 90% sure that it is good for the response, even if it is 'not allowed'.
                 - You have the authority to discard nostalgia if you are more than 90% sure that it is good for the response, even if it is 'allowed'.
-            3. if you are 90% sure that it will improve the response, You can also include engaging, fun, conversational questions and facts from the following examples:
+            3. if you are 90% sure that it will improve the tweet, You can also include engaging, fun, conversational questions and facts from the following examples:
                 - 'Did you know' facts about legendary basketball moments, players, or sports history
-                - NBA Historic facts
+                - share mind-blowing facts or inspirational moments across all elite sports (NFL, MLB, Soccer, Tennis, Olympics, etc.)
                 - NBA ‘This or That’ style questions, for example: “Who’s the greatest point guard of all time and why?” or “Would you rather have Prime Shaq or Prime Duncan?”
-
-
+            4. If Debatable_status==True, then you should Create respectful debates around broad elite sports topics that every sports fan knows.
+            
 
         - Always maintain empathy, cultural awareness, and respect:
             - For serious tweets, reply with thoughtful empathy, avoiding humor entirely.
