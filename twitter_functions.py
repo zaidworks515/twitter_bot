@@ -229,7 +229,7 @@ def post_tweet():
 
     today = datetime.today()
     to_date = today.strftime('%Y-%m-%d')
-    from_date = (today - timedelta(days=1)).strftime('%Y-%m-%d')
+    from_date = (today - timedelta(days=3)).strftime('%Y-%m-%d')
 
     tweets = check_tweets(last_tweet_category, from_date, to_date)
 
@@ -246,7 +246,7 @@ def post_tweet():
             similarity = util.cos_sim(embedding_a, embedding_b).item()
             print(f"Similarity with existing tweet: {similarity:.2f}")
 
-            if similarity >= 0.49:
+            if similarity >= 0.25:
                 print(f"Similar tweet found: {existing_title}")
                 print("Skipping tweet posting.")
                 return None
@@ -907,47 +907,50 @@ def category_filter(news, category, grok_api_key):
     
     system_instructions = (f"""
         ### USE CASE DEFINITION  
-        We are curating **top-tier, high-engagement content** for Game 5 Ball’s audience. Our goal is to **select a news story** that maximizes engagement, aligns with basketball culture, and fits our brand.  
+        We are curating **top-tier, high-engagement content** for our Twitter page. Our goal is to **select a single news story** that maximizes virality, emotional resonance, and audience interaction.
 
         ### **SELECTION CRITERIA**  
-        From the given list of news articles, **choose one** that meets the following criteria:  
+        From the given list of news articles, **choose one** that meets the following criteria:
 
-        1. **Basketball Priority:**  
-        - Prefer news directly related to basketball (NBA, NCAA, international leagues, legendary players, major events, viral moments).  
-        - If no basketball-related news is present, select a general sports article.  
+        1. **Engagement Potential:**  
+        - Select a story that **drives conversations**, sparks opinions, or encourages sharing.  
+        - Ideal topics include viral moments, bold opinions, unexpected twists, or trending issues.  
+        - Avoid overly technical, niche, or dry stories.
 
-        2. **Engagement Potential:**  
-        - Select a story that **drives conversation** (GOAT debates, game-winning shots, legendary moments, viral plays).  
-        - Avoid overly technical or dry stories that don’t spark engagement.  
+        2. **Emotional or Cultural Impact:**  
+        - Prefer news that evokes **hype, nostalgia, humor, outrage, or passion**.  
+        - Bonus points for stories tied to cultural relevance, iconic figures, or historical throwbacks.  
+        - A well-timed meme-worthy or celebratory story is highly preferred.
 
-        3. **Cultural & Nostalgic Impact:**  
-        - If possible, choose a news story that allows us to reference legendary basketball moments, iconic players, or broader sports history.  
-        - Prefer articles that evoke strong emotions—**hype, nostalgia, humor, or passion**.  
+        3. **Debatable Topic Flag:**  
+        - For the selected news story, determine if it can **start a debate or conversation**.  
+        - If the topic leads to strong opinions or allows for deeper discussion, mark it as **True**. Otherwise, mark it as **False**.
+        - The debatable flag applies to any category (not just sports).
+        
 
         4. **Avoid Overly Serious or Tragic Stories:**  
-        - Skip articles that are too sensitive or tragic unless they are essential to the sports world.  
-        - If a serious topic must be selected, it should allow for an empathetic yet engaging response.  
-        
-        5. **Debatable Topic Flag:**  
-        - For the selected news story, determine if it can **start a debate or conversation**.  
-        - If the news leads to a meaningful debate or allows for deeper discussion, mark it as **True**. Otherwise, mark it as **False**.
-        - The **debatable flag should only be True if the news is related to sports**. 
-        
-        ### **OUTPUT FORMAT**  
-        Your response must be in **JSON format** with these fields of the selected news:  
+        - Skip articles that are deeply tragic or sensitive unless they allow for meaningful, empathetic engagement.
+        - If serious, it should still spark impactful conversation (e.g., historic rulings, major celebrity news).
 
-         {{
+        5. **Avoid Controversial Political or Tech Figures:**  
+        - **Do not select stories** that are centered on or heavily involve controversial figures such as:
+        - Donald Trump, Elon Musk, Tim Cook, Satya Nadella, Bill Gates, or other polarizing public figures.
+        - These stories may derail from the brand's intended tone or create unintended controversy.
+        - Positive news about these figures is allowed, but avoid anything polarizing or controversial.
+        
+        6. **Category Can Be Any:**  
+        - News can be selected from **any category** (sports, tech, entertainment, culture, etc.) as long as it meets the above criteria.
+
+        ### **OUTPUT FORMAT**  
+        Your response must be in **JSON format** with these fields of the selected news:
+
+        {{
             "title": "Chosen article title",
-            "description": "description of the selected news article",
+            "description": "Description of the selected news article",
             "content": "Full content of the news",
-            "category": {category}
-            "url": "News source link",
-            "image": "Thumbnail or featured image URL",
-            "publishedAt": "Date of publication",
-            "source": "Source name",
+            "category": {category},
             "debatable": "True/False"
         }}
-
     """)
 
     data = {
@@ -965,18 +968,37 @@ def category_filter(news, category, grok_api_key):
         "stream": False,
         "temperature": 0.2
     }
-
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
-        result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-
-        clean_result = re.sub(r"^```json\s*|```$", "", result.strip())
-
-        return json.loads(clean_result)
     
-    except requests.exceptions.RequestException as e:
-        return f"An error occurred: {e}"
+    MAX_RETRIES = 10
+    REQUIRED_KEYS = {"title", "description", "content", "category", "debatable"}
+    
+    def is_valid_response(data):
+        """Check if all required keys are present in the JSON."""
+        return isinstance(data, dict) and REQUIRED_KEYS.issubset(data.keys())
+    
+    try_count = 0
+    while try_count < MAX_RETRIES:
+        try:
+            response = requests.post(url, headers=headers, json=data)
+            response.raise_for_status()
+
+            result = response.json().get("choices", [{}])[0].get("message", {}).get("content", "")
+            clean_result = re.sub(r"^```json\s*|```$", "", result.strip())
+            parsed_result = json.loads(clean_result)
+
+            if is_valid_response(parsed_result):
+                return parsed_result
+            else:
+                raise ValueError("Response JSON missing required keys or structure is invalid.")
+
+        except (requests.exceptions.RequestException, json.JSONDecodeError, ValueError) as e:
+            print(f"Attempt {try_count + 1} failed filtering news data: {e}")
+            try_count += 1
+            if try_count < MAX_RETRIES:
+                time.sleep(5)
+
+    raise Exception("Failed to get a valid response from category_filter after 10 attempts.")
+
 
 
 def get_news(last_category):
@@ -1004,12 +1026,12 @@ def get_news(last_category):
         print("Deleted existing news_data.txt file.")
 
     categories = [
-        {"NBA": ["NBA", "NBA Playoffs", "NBA Finals", "NBA Drama", "NBA Championship"]},
-        {"AI": ["Artificial Intelligence", "AI"]},
+        {"NBA": ["NBA", "NBA Playoffs", "NBA Finals", "NBA Drama", "NBA Championship", "NBA All-Star", "NBA Draft", "NBA Trade", "NBA Rumors"]},
+        {"AI": ["Artificial Intelligence", "AI", "AI Ethics", "AI Revolution"]},
         {"Sports": ["top sports news", "Sports Updates", "Latest Sports", "Sports Headlines"]},
-        {"Basketball": ["Basketball", "Basketball News", "basketball culture"]},
-        {"Crypto": ["crypto", "cryptocurrency", "blockchain", "crypto market"]},
-        {"Tech": ["technology", "web3"]}
+        {"Basketball": ["Basketball", "Basketball News", "basketball culture", "Basketball Highlights", "Dunk Contest", "Basketball History", "Basketball Viral", "Basketball Players"]},
+        {"Crypto": ["crypto", "cryptocurrency", "blockchain", "crypto market", "Crypto Trends", "Crypto Crash", "Crypto Wallet", "Crypto Exchange"]},
+        {"Tech": ["technology", "web3", "Tech News", "Tech Giants", "AI in Tech"]}
     ]
 
     max_attempts = len(categories)
@@ -1042,14 +1064,20 @@ def get_news(last_category):
 
                 data = response.json()
                 articles = data.get("articles", [])
-
+                
                 if articles:
                     published_at = articles[0]['publishedAt']
                     article_date = datetime.strptime(published_at, '%Y-%m-%dT%H:%M:%SZ')
 
                     if article_date >= datetime.now() - timedelta(days=2):
                         print(f"  Article found: '{articles[0]['title']}'")
-                        news_data.extend(articles)
+                        title = articles[0]['title']
+                        description = articles[0]["description"]
+                        content = articles[0]["content"]
+                        filtered_data = [{"title": title, "description": description, "content": content}]
+                        
+                        news_data.extend(filtered_data)
+                        time.sleep(5)
 
             except requests.exceptions.RequestException as e:
                 print(f"  Error fetching {subcategory}: {e}")
@@ -1302,7 +1330,7 @@ def make_tweet_gork(news, article_category):
             if try_count < MAX_RETRIES:
                 time.sleep(5)
                 
-    raise Exception("Failed to get a valid response from make_tweet_gork after 3 attempts.")  
+    raise Exception("Failed to get a valid response from make_tweet_gork after 10 attempts.")  
 
 
 iteration_count3 = 0 
