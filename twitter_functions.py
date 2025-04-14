@@ -229,7 +229,7 @@ def post_tweet():
 
     today = datetime.today()
     to_date = today.strftime('%Y-%m-%d')
-    from_date = (today - timedelta(days=3)).strftime('%Y-%m-%d')
+    from_date = (today - timedelta(days=5)).strftime('%Y-%m-%d')
 
     tweets = check_tweets(last_tweet_category, from_date, to_date)
 
@@ -246,7 +246,7 @@ def post_tweet():
             similarity = util.cos_sim(embedding_a, embedding_b).item()
             print(f"Similarity with existing tweet: {similarity:.2f}")
 
-            if similarity >= 0.25:
+            if similarity >= 0.35:
                 print(f"Similar tweet found: {existing_title}")
                 print("Skipping tweet posting.")
                 return None
