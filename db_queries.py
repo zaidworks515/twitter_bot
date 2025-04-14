@@ -170,7 +170,7 @@ def check_status(tagged_tweet_id, conversation_id, author_id):
         return "Unable to connect to the database"
 
 
-def check_tweets(tweet_category, from_date, to_date):
+def check_tweets(from_date, to_date):
     """
     Fetches tweets of a specified category from the database within a given time frame.
 
@@ -189,9 +189,9 @@ def check_tweets(tweet_category, from_date, to_date):
         try:
             query = """
                 SELECT * FROM make_tweets
-                WHERE tweet_category = %s AND DATE(created_at) BETWEEN %s AND %s
+                WHERE DATE(created_at) BETWEEN %s AND %s
             """
-            cursor.execute(query, (tweet_category, from_date, to_date))
+            cursor.execute(query, (from_date, to_date))
 
             results = cursor.fetchall()
 

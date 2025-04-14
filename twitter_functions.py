@@ -229,9 +229,9 @@ def post_tweet():
 
     today = datetime.today()
     to_date = today.strftime('%Y-%m-%d')
-    from_date = (today - timedelta(days=5)).strftime('%Y-%m-%d')
+    from_date = (today - timedelta(days=2)).strftime('%Y-%m-%d')
 
-    tweets = check_tweets(last_tweet_category, from_date, to_date)
+    tweets = check_tweets(from_date, to_date)
 
     fetched_title = article['title']
     fetched_description = article['description']
@@ -246,7 +246,7 @@ def post_tweet():
             similarity = util.cos_sim(embedding_a, embedding_b).item()
             print(f"Similarity with existing tweet: {similarity:.2f}")
 
-            if similarity >= 0.35:
+            if similarity >= 0.30:
                 print(f"Similar tweet found: {existing_title}")
                 print("Skipping tweet posting.")
                 return None
@@ -1027,11 +1027,11 @@ def get_news(last_category):
 
     categories = [
         {"NBA": ["NBA", "NBA Playoffs", "NBA Finals", "NBA Drama", "NBA Championship", "NBA All-Star", "NBA Draft", "NBA Trade", "NBA Rumors"]},
-        {"AI": ["Artificial Intelligence", "AI", "AI Ethics", "AI Revolution"]},
+        {"AI": ["Artificial Intelligence", "AI", "AI Ethics", "AI Revolution", "AI in Tech"]},
         {"Sports": ["top sports news", "Sports Updates", "Latest Sports", "Sports Headlines"]},
         {"Basketball": ["Basketball", "Basketball News", "basketball culture", "Basketball Highlights", "Dunk Contest", "Basketball History", "Basketball Viral", "Basketball Players"]},
         {"Crypto": ["crypto", "cryptocurrency", "blockchain", "crypto market", "Crypto Trends", "Crypto Crash", "Crypto Wallet", "Crypto Exchange"]},
-        {"Tech": ["technology", "web3", "Tech News", "Tech Giants", "AI in Tech"]}
+        {"Tech": ["technology", "web3", "Tech News", "Tech Giants"]}
     ]
 
     max_attempts = len(categories)
