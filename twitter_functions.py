@@ -1027,9 +1027,9 @@ def get_news(last_category):
 
     categories = [
         {"AI": ["Artificial Intelligence", "AI", "AI Ethics", "AI Revolution", "AI in Tech"]},
+        {"Crypto": ["crypto", "cryptocurrency", "blockchain", "crypto market", "Crypto Trends", "Crypto Crash", "Crypto Wallet", "Crypto Exchange"]},
         {"Sports": ["top sports news", "Sports Updates", "Latest Sports", "Sports Headlines"]},
         {"Basketball": ["Basketball", "Basketball News", "basketball culture", "Basketball Highlights", "Dunk Contest", "Basketball History", "Basketball Viral", "Basketball Players"]},
-        {"Crypto": ["crypto", "cryptocurrency", "blockchain", "crypto market", "Crypto Trends", "Crypto Crash", "Crypto Wallet", "Crypto Exchange"]},
         {"NBA": ["NBA", "NBA Playoffs", "NBA Finals", "NBA Drama", "NBA Championship", "NBA All Star", "NBA Draft", "NBA Trade", "NBA Rumors"]},
         {"Tech": ["technology", "web3", "Tech News", "Tech Giants"]}
     ]
