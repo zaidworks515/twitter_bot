@@ -229,9 +229,12 @@ def check_last_tweet_category():
             results = cursor.fetchone()
 
             if results:
-                tweet_category = results[-3]
+                tweet_category = results[-2]
 
-                return tweet_category
+                if tweet_category:
+                    return tweet_category
+                else:
+                    return "AI"
             else:
                 return None
 
@@ -242,6 +245,53 @@ def check_last_tweet_category():
             connection.close()
     else:
         return "Unable to connect to the database"
+
+
+
+def fetch_last_category_tweets(from_date, to_date, tweet_category):
+    """
+    Fetches tweets of a specified category from the database within a given time frame.
+
+    Parameters
+    ----------
+    from_date : str
+        The start date for fetching tweets (format: YYYY-MM-DD).
+    to_date : str
+        The end date for fetching tweets (format: YYYY-MM-DD).
+    tweet_category : str
+        The category of tweets to filter (e.g., "sports", "crypto", "entertainment").
+
+    Returns
+    -------
+    list or None
+        List of matching tweet records or None if no matches.
+    """
+    connection = create_connection()
+    if connection:
+        cursor = connection.cursor()
+        try:
+            query = """
+                SELECT news_title, news_description FROM make_tweets
+                WHERE DATE(created_at) BETWEEN %s AND %s
+                AND tweet_category = %s
+            """
+            cursor.execute(query, (from_date, to_date, tweet_category))
+
+            results = cursor.fetchall()
+
+            if results:
+                return results
+            else:
+                return None
+
+        except Exception as e:
+            return f"An error occurred: {e}"
+        finally:
+            cursor.close()
+            connection.close()
+    else:
+        return "Unable to connect to the database"
+    
 
 
 def insert_results_make_tweets(
@@ -271,8 +321,8 @@ def insert_results_make_tweets(
         print("connection established")
         cursor = connection.cursor()
         try:
-            insert_query = """INSERT INTO make_tweets (news_title, news_description, generated_tweet, tweet_category, post_status) 
-            VALUES (%s, %s, %s, %s, %s)"""
+            insert_query = """INSERT INTO make_tweets (news_title, news_description, generated_tweet, tweet_category, last_news_category, post_status) 
+            VALUES (%s, %s, %s, %s, %s, %s)"""
             cursor.execute(
                 insert_query,
                 (
@@ -280,6 +330,7 @@ def insert_results_make_tweets(
                     news_description,
                     generated_tweet,
                     tweet_category,
+                    tweet_category, # last_news_category is same as tweet_category because it is initially the same, it only changes if news is found but a similar tweet is already posted
                     post_status,
                 ),
             )
@@ -296,3 +347,42 @@ def insert_results_make_tweets(
             connection.close()
     else:
         return "Unable to connect to the database"
+
+
+
+def update_last_news_category(new_last_category):
+    """
+    Updates the last_news_category for the latest inserted tweet
+
+    parameters
+    ----------
+    new_last_category : str
+        The new value for the last_news_category column
+
+    returns
+    -------
+    str : success or error message
+    """
+    connection = create_connection()
+    if connection:
+        print("connection established")
+        cursor = connection.cursor()
+        try:
+            update_query = """
+                UPDATE make_tweets
+                SET last_news_category = %s
+                WHERE id = (SELECT MAX(id) FROM make_tweets)
+            """
+            cursor.execute(update_query, (new_last_category,))
+            connection.commit()
+            print("last_news_category updated for the latest entry")
+            return "Update successful"
+        except Error as e:
+            connection.rollback()
+            return f"An error occurred: {e}"
+        finally:
+            cursor.close()
+            connection.close()
+    else:
+        return "Unable to connect to the database"
+
