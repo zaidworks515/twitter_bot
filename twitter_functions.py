@@ -246,7 +246,7 @@ def post_tweet():
             similarity = util.cos_sim(embedding_a, embedding_b).item()
             print(f"Similarity with existing tweet: {similarity:.2f}")
 
-            if similarity >= 0.30:
+            if similarity >= 0.49:
                 print(f"Similar tweet found: {existing_title}")
                 print("Skipping tweet posting.")
                 return None
