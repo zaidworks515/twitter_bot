@@ -349,7 +349,6 @@ def insert_results_make_tweets(
         return "Unable to connect to the database"
 
 
-
 def update_last_news_category(new_last_category):
     """
     Updates the last_news_category for the latest inserted tweet
@@ -370,8 +369,11 @@ def update_last_news_category(new_last_category):
         try:
             update_query = """
                 UPDATE make_tweets
-                SET last_news_category = %s
-                WHERE id = (SELECT MAX(id) FROM make_tweets)
+                JOIN (
+                    SELECT MAX(id) as max_id FROM make_tweets
+                ) AS latest
+                ON make_tweets.id = latest.max_id
+                SET make_tweets.last_news_category = %s
             """
             cursor.execute(update_query, (new_last_category,))
             connection.commit()
@@ -385,4 +387,3 @@ def update_last_news_category(new_last_category):
             connection.close()
     else:
         return "Unable to connect to the database"
-
