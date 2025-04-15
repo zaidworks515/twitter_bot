@@ -244,7 +244,10 @@ def post_tweet():
                 if similarity >= 0.30:
                     print(f"Similar tweet found: {existing_title}")
                     print("Skipping tweet posting.")
-                    update_last_news_category(article_category)
+                    status = update_last_news_category(article_category)
+                    print("====" * 15)
+                    print(status)
+                    print("====" * 15)
                     similar_found = True
                     break
 
