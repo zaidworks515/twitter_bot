@@ -4,7 +4,7 @@ import tweepy
 from requests_oauthlib import OAuth1
 from config import api_key, api_secret, access_token, access_token_secret, bearer_token, gork_api_key, news_api, eleven_labs_api_key
 import requests
-from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets, check_last_tweet_category, check_block_status
+from db_queries import check_status, insert_results, check_tweets, insert_results_make_tweets, check_last_tweet_category, check_block_status, fetch_last_category_tweets, update_last_news_category
 from slang_picker import SlangPicker
 import re
 from sentence_transformers import SentenceTransformer, util
@@ -203,94 +203,98 @@ def post_tweet():
     Fetches a news article based on the given category, checks for similar recent tweets,  
     and posts a new tweet if no similar one exists.
 
-
     Returns
     -------
-    dict
-        A dictionary containing details of the successfully posted tweet (e.g., tweet ID and text).
-    None
-        If no article is found, a similar tweet already exists, or an error occurs while posting.
-    
+    dict or None
     """
-    post = False
-    
-    last_tweet_category = check_last_tweet_category()
-    
-    data = get_news(last_category=last_tweet_category)
-    article = None
+    retry_attempted = False
 
-    if data:
-        article = data
-        article_category = data['category']
+    while True:
+        post = False
+        last_tweet_category = check_last_tweet_category()
+        data = get_news(last_category=last_tweet_category)
+        article = None
 
-    if not article:
-        print("No articles found for the given category.")
-        return None
+        if data:
+            article = data
+            article_category = data['category']
 
-    today = datetime.today()
-    to_date = today.strftime('%Y-%m-%d')
-    from_date = (today - timedelta(days=2)).strftime('%Y-%m-%d')
+        if not article:
+            print("No articles found for the given category.")
+            return None
 
-    tweets = check_tweets(from_date, to_date)
+        today = datetime.today()
+        to_date = today.strftime('%Y-%m-%d')
+        from_date = (today - timedelta(days=2)).strftime('%Y-%m-%d')
 
-    fetched_title = article['title']
-    fetched_description = article['description']
-    embedding_a = model.encode(fetched_title, convert_to_tensor=True)
+        tweets = check_tweets(from_date, to_date)
 
+        fetched_title = article['title']
+        fetched_description = article['description']
+        embedding_a = model.encode(fetched_title, convert_to_tensor=True)
 
-    if tweets:
-        for tweet in tweets:
-            existing_title = tweet[1]  
-            embedding_b = model.encode(existing_title, convert_to_tensor=True)
+        if tweets:
+            similar_found = False
+            for tweet in tweets:
+                existing_title = tweet[1]
+                embedding_b = model.encode(existing_title, convert_to_tensor=True)
+                similarity = util.cos_sim(embedding_a, embedding_b).item()
+                print(f"Similarity with existing tweet: {similarity:.2f}")
 
-            similarity = util.cos_sim(embedding_a, embedding_b).item()
-            print(f"Similarity with existing tweet: {similarity:.2f}")
+                if similarity >= 0.30:
+                    print(f"Similar tweet found: {existing_title}")
+                    print("Skipping tweet posting.")
+                    update_last_news_category(article_category)
+                    similar_found = True
+                    break
 
-            if similarity >= 0.30:
-                print(f"Similar tweet found: {existing_title}")
-                print("Skipping tweet posting.")
-                return None
+            if similar_found:
+                if not retry_attempted:
+                    print("Retrying once with a new article...")
+                    retry_attempted = True
+                    continue
+                else:
+                    return None
             else:
                 post = True
-    else:
-        post = True
+        else:
+            post = True
 
-    if post:
-        generated_tweet = make_tweet_gork(article, article_category)
-        if generated_tweet:
-            marketing_status = generated_tweet[2] 
-            base_news_of_tweet = generated_tweet[1] 
-            generated_tweet = generated_tweet[0]
-            
-            audio = eleven_labs_audio_generation(generated_tweet, eleven_labs_api_key)
-        
-    if audio:
-        complete_video = make_video_complete()
-        if complete_video:
-            
-            try:
-                caption = video_caption(generated_tweet, base_news_of_tweet, marketing_status)
-                tweet_response = upload_video_to_twitter(caption)
-                print(f"Video posted successfully: {tweet_response}")
-            
-                if tweet_response:
-                    insert_results_make_tweets(
-                        news_title=fetched_title,
-                        news_description=fetched_description,
-                        generated_tweet=generated_tweet,
-                        tweet_category=article_category,
-                        post_status='successful'
-                    )
-                    print(f"Tweet posted successfully: {tweet_response}")
-                    
-                    print("Temporary audio and video files deleted.")
-                    return tweet_response
+        if post:
+            generated_tweet = make_tweet_gork(article, article_category)
+            if generated_tweet:
+                marketing_status = generated_tweet[2]
+                base_news_of_tweet = generated_tweet[1]
+                generated_tweet = generated_tweet[0]
 
-            except tweepy.TweepyException as e:
-                print(f"Error posting tweet: {e}")
-                return None
+                audio = eleven_labs_audio_generation(generated_tweet, eleven_labs_api_key)
 
-    return None
+                if audio:
+                    complete_video = make_video_complete()
+                    if complete_video:
+                        try:
+                            caption = video_caption(generated_tweet, base_news_of_tweet, marketing_status)
+                            tweet_response = upload_video_to_twitter(caption)
+                            print(f"Video posted successfully: {tweet_response}")
+
+                            if tweet_response:
+                                insert_results_make_tweets(
+                                    news_title=fetched_title,
+                                    news_description=fetched_description,
+                                    generated_tweet=generated_tweet,
+                                    tweet_category=article_category,
+                                    post_status='successful'
+                                )
+                                print(f"Tweet posted successfully: {tweet_response}")
+                                print("Temporary audio and video files deleted.")
+                                return tweet_response
+
+                        except tweepy.TweepyException as e:
+                            print(f"Error posting tweet: {e}")
+                            return None
+        return None
+
+
 
 
 def bearer_oauth(r):
@@ -880,7 +884,7 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply, marketing_st
 
 
 
-def category_filter(news, category, grok_api_key):
+def category_filter(news, category, recent_tweets, grok_api_key):
     """
     Selects the most engaging news article based on predefined criteria.
 
@@ -940,6 +944,7 @@ def category_filter(news, category, grok_api_key):
         
         6. **Category Can Be Any:**  
         - News can be selected from **any category** (sports, tech, entertainment, culture, etc.) as long as it meets the above criteria.
+        - Don't select the news if it is already in recent tweets: {recent_tweets}.
 
         ### **OUTPUT FORMAT**  
         Your response must be in **JSON format** with these fields of the selected news:
@@ -1026,12 +1031,12 @@ def get_news(last_category):
         print("Deleted existing news_data.txt file.")
 
     categories = [
-        {"AI": ["Artificial Intelligence", "AI", "AI Ethics", "AI Revolution", "AI in Tech"]},
-        {"Sports": ["top sports news", "Sports Updates", "Latest Sports", "Sports Headlines"]},
-        {"Basketball": ["Basketball", "Basketball News", "basketball culture", "Basketball Highlights", "Dunk Contest", "Basketball History", "Basketball Viral", "Basketball Players"]},
-        {"Crypto": ["crypto", "cryptocurrency", "blockchain", "crypto market", "Crypto Trends", "Crypto Crash", "Crypto Wallet", "Crypto Exchange"]},
-        {"NBA": ["NBA", "NBA Playoffs", "NBA Finals", "NBA Drama", "NBA Championship", "NBA All Star", "NBA Draft", "NBA Trade", "NBA Rumors"]},
-        {"Tech": ["technology", "web3", "Tech News", "Tech Giants"]}
+        {"AI": ["Artificial Intelligence", "AI", "AI Tech"]},
+        {"Sports": ["Sports", "NFL", "MLB", "MLS"]},
+        {"Basketball": ["Basketball", "Basketball News", "Dunk Contest"]},
+        {"Crypto": ["crypto", "cryptocurrency", "blockchain", "crypto market", "Crypto Exchange", "Forex", "NFT"]},
+        {"NBA": ["NBA", "NBA Playoffs", "NBA Finals", "NBA Championship", "NBA Draft", "NBA Trade", "NBA Rumors"]},
+        {"Tech": ["technology", "web3", "Tech"]}
     ]
 
     max_attempts = len(categories)
@@ -1077,7 +1082,7 @@ def get_news(last_category):
                         filtered_data = [{"title": title, "description": description, "content": content}]
                         
                         news_data.extend(filtered_data)
-                        time.sleep(5)
+                        time.sleep(10)
 
             except requests.exceptions.RequestException as e:
                 print(f"  Error fetching {subcategory}: {e}")
@@ -1093,7 +1098,12 @@ def get_news(last_category):
 
         if news_data:
             print(news_data)
-            selected_news_title = category_filter(news_data, category_name, gork_api_key)
+            today = datetime.today()
+            to_date = today.strftime('%Y-%m-%d')
+            from_date = (today - timedelta(days=2)).strftime('%Y-%m-%d')
+            recent_tweets = fetch_last_category_tweets(from_date, to_date, category_name)
+            print(f"\ntweets found: {recent_tweets}")
+            selected_news_title = category_filter(news_data, category_name, recent_tweets, gork_api_key)
             print(selected_news_title)
             return selected_news_title
             
