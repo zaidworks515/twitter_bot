@@ -207,9 +207,10 @@ def post_tweet():
     -------
     dict or None
     """
-    retry_attempted = False
+    retry_attempts = 0
+    max_retries = 3
 
-    while True:
+    while retry_attempts < max_retries:
         post = False
         last_tweet_category = check_last_tweet_category()
         data = get_news(last_category=last_tweet_category)
@@ -252,12 +253,9 @@ def post_tweet():
                     break
 
             if similar_found:
-                if not retry_attempted:
-                    print("Retrying once with a new article...")
-                    retry_attempted = True
-                    continue
-                else:
-                    return None
+                retry_attempts += 1
+                print(f"Retrying with a new article... Attempt {retry_attempts}/{max_retries}")
+                continue
             else:
                 post = True
         else:
@@ -296,6 +294,10 @@ def post_tweet():
                             print(f"Error posting tweet: {e}")
                             return None
         return None
+
+    print("Max retry attempts reached. No suitable article found.")
+    return None
+
 
 
 
@@ -1034,12 +1036,14 @@ def get_news(last_category):
         print("Deleted existing news_data.txt file.")
 
     categories = [
+        {"NBA": ["NBA", "NBA Playoffs", "NBA Finals", "NBA Championship"]},
         {"AI": ["Artificial Intelligence", "AI", "AI Tech"]},
         {"Sports": ["Sports", "NFL", "MLB", "MLS"]},
+        {"Crypto": ["crypto", "cryptocurrency", "blockchain"]},
         {"Basketball": ["Basketball", "Basketball News", "Dunk Contest"]},
-        {"Crypto": ["crypto", "cryptocurrency", "blockchain", "crypto market", "Crypto Exchange", "Forex", "NFT"]},
-        {"NBA": ["NBA", "NBA Playoffs", "NBA Finals", "NBA Championship", "NBA Draft", "NBA Trade", "NBA Rumors"]},
-        {"Tech": ["technology", "web3", "Tech"]}
+        {"Tech": ["technology", "web3", "Tech"]},
+        {"NBA2": ["NBA Draft", "NBA Trade", "NBA Rumors"]},
+        {"Crypto2": ["crypto market", "Crypto Exchange", "Forex", "NFT"]}
     ]
 
     max_attempts = len(categories)
