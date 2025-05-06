@@ -790,6 +790,8 @@ def get_gork_response(tweet, is_reply, reply_count, previous_reply, marketing_st
         - **Marketing Strategy:**
             - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following link in the caption To get tokens: www.Game5Ball.com.
             - Only If the tweet mentions a game, match, or any gameplay-related topic, you can add the Meme Ball game link: "www.memeball.ai".
+            - www.Game5Ball.com is the platform where the people can get tokens.
+            - www.memeball.ai is the platform where the people can play game.
             - Do not use any sort of hashtags in the caption. 
 
         - Twitter Handle Rules:
@@ -1459,6 +1461,8 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
         - **Marketing Strategy:**
             - Current value of marketing_status = {marketing_status}. If marketing_status = True, then add the following link in the caption To get tokens: www.Game5Ball.com.
             - Only If the tweet mentions a game, match, or any gameplay-related topic, you can add the Meme Ball game link: "www.memeball.ai".
+            - www.Game5Ball.com is the platform where the people can get tokens.
+            - www.memeball.ai is the platform where the people can play game.
             - Do not use any sort of hashtags in the caption. 
 
         - Twitter Handle Rules:
@@ -1470,7 +1474,7 @@ def get_gork_response_for_selected_accounts(tweet, is_reply, reply_count, previo
         - Reply Structure:
             {{"marketing_status": "True/False", "related_context": "True/False", "generated_text": "reply", "reply_allowed":"True/False"}}
         
-        - Keep interactions consice, classy, and memorable—ensuring that *Game 5 Ball’s legacy* is highlighted as an iconic and central theme in your humor.
+        - Keep interactions concise, classy, and memorable—ensuring that *Game 5 Ball’s legacy* is highlighted as an iconic and central theme in your humor.
 
     """)
 
